@@ -6,7 +6,7 @@ PS.Utilies is a c# .NET standard 2.0 set of powershell cmdlets that wrap common 
 ## Installation
 Install-Module PS.Utilities
 
-## Cmdlets
+## Cmdlets (Common)
 
 <details>
 <summary>Set-DevopsCredentials</summary>
@@ -32,6 +32,29 @@ Set-DevopsCredentials -PlaintextPassword $patToken -Organisation "your-devops-or
  
 </details>
 
+## Cmdlets (Git) 
+
+<details>
+ <summary>Install-Git</summary>
+ 
+ ### Downloads and optionally installs the latest verion of git for windows  
+
+**Options**
+
+| Parameter | Description                                                                                          | Mandatory |
+| --------- | ---------------------------------------------------------------------------------------------------- | --------- |
+| AutoInstall | switch parameter which (if specified) installs git to the local users %appdata% | False | 
+
+**Returns**
+
+[string] the full path of the git executable
+
+**Example** 
+```
+$gitExe = Install-Git -AutoInstall 
+```
+</details>
+
 <details>
 <summary>Copy-Repository</summary>
 
@@ -49,6 +72,7 @@ Set-DevopsCredentials -PlaintextPassword $patToken -Organisation "your-devops-or
 | Force | (switch parameter) if the repos already exists it will be deleted and re-created | False | 
 
 **Returns**
+
 [string] the full path of the local repository  
 
 **Example** 
