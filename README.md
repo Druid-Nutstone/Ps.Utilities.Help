@@ -187,6 +187,7 @@ $project = Get-DevopsProject
 ---
 
 &nbsp;  
+
 # Get-DevopsRepositories
 Returns a collection of repositories from a given devops project  
 
@@ -198,8 +199,8 @@ $projectRepositories = Get-DevopsRepositories -Name $projectName
 foreach ($repo in projectRepositories) {
    Write-Host "$($repo.RemoteUrl)"
 }
- 
 ```
+
 #### RepositoryModel
 ```
     public class RepositoryModel
@@ -228,7 +229,7 @@ foreach ($repo in projectRepositories) {
 | Parameter | Description |  
 | --- | --- |
 | -Project | (optional) a devops project from a previous call to Get-DevopsProject(s) |  
-| -Name | the name of the project to retrieve the repositories from 
+| -Name | the name of the project to retrieve the repositories from |
 
 </details>
 
@@ -236,6 +237,7 @@ foreach ($repo in projectRepositories) {
 
 **Returns**
 [RepositoryModelCollection] A devop Repository
+
 ---
 
 &nbsp;  
@@ -250,7 +252,6 @@ $projectRepository = Get-DevopsRepository -ProjectName $projectName -Name $repos
 foreach ($repo in projectRepositories) {
    Write-Host "$($repo.RemoteUrl)"
 }
- 
 ```
 #### RepositoryModel
 ```
@@ -279,16 +280,16 @@ foreach ($repo in projectRepositories) {
 
 | Parameter | Description |  
 | --- | --- |
-| -Repositories | (optional) [RepositoryModelCollection] a collection of repositories from devops project from a previous call to Get-DevopsRepositories |  
-| -ProjectName | (optional) The name of the project that contains the project 
-| -Name | the name of the repository to retrieve  
+| -Repositories | (optional) RepositoryModelCollection a collection of repositories from devops project from a previous call to Get-DevopsRepositories |  
+| -ProjectName | (optional) The name of the project that contains the project |
+| -Name | the name of the repository to retrieve | 
 
 </details>
 
 &nbsp;
 
 **Returns**
-[RepositoryModel] A devop Repository
+[RepositoryModel] A devops Repository
 ---
 
 ## GIT Cmdlets
@@ -455,7 +456,6 @@ Checks out the given branch from the given local repository
 if (Find-Branch -Directory $repositoryPath -Branch $branch) {
    $rc = Switch-Branch -Directory $repositoryPath -Branch $branch
 }
-
 ```
 
 <details>
