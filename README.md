@@ -1,15 +1,29 @@
-# Ps.Utilities Help (This is NOT complete - i'm working on it!)
+# Ps.Utilities Help 
 
 # Overview 
-PS.Utilies is a c# .NET standard 2.0 set of powershell cmdlets that wrap common (windows azure) **developer** utilities' Currently it supports **GIT** and **AZURE Devops**
+PS.Utilies is a c# .NET standard 2.0 set of powershell cmdlets that wrap common (windows azure) **developer** utilities' Currently it supports **GIT/Azure Devops/Excel**
 
 # Installation
 ```
 Install-Module PS.Utilities
 ```
-&nbsp;  
 
----
+## Cmdlet Summary
+   | Cmdlet | Description | System |  
+   | --- | --- | --- |
+   | [Set-DevopsCredentials](#set-devopscredentials) | Sets session-wide credentials | Git/Devops
+   | [Find-DevopsRepository](#find-devopsrepository) | locates the remote devops repository | Devops
+   | [Install-Git](#install-git) | Installs Git | Git
+   | [Copy-Repository](#install-git) | Clones a remote repository | Git
+   | [Find-Branch](#find-branch) | Checks local branch | Git
+   | [Switch-Branch](#switch-branch) | Checks out local branch | Git
+   | [Remove-Branch](#remove-branch) | Removes local branch | Git
+   | [New-Branch](#new-branch) | Creates new local branch | Git
+   | [Save-Repository](#save-repository) | Saves (commmits) local changes | Git
+   | [Push-Repository](#push-repository) | pushes commited changes from local to remote repository | Git
+
+
+## Common Cmdlets
 ### Set-DevopsCredentials
 Sets session-wide credentials for both git and devops 
 
@@ -37,7 +51,57 @@ Nothing
 
 ---
 
+## Devops Cmdlets
 &nbsp;  
+### Find-DevopsRepository
+locates the remote devops repository specified by the -Name parameter. It will search all projects within the organisation defined in Set-DevopsCredentials
+
+**Example** 
+```
+$repo = Find-DevopsRepository -Name $repoName
+# use $repo.RemoteUrl to target remote url 
+ 
+
+```
+### RepositoryModel
+```
+    public class RepositoryModel
+    {
+        public Guid Id { get; set; }
+
+        public string Name { get; set; }
+
+        public string Url { get; set; }
+
+        public string DefaultBranch { get; set; }
+
+        public long Size { get; set; }
+
+        public string RemoteUrl { get; set; }
+
+        public bool IsDisabled { get; set; }
+
+        public Guid ProjectID { get; set; } 
+    } 
+```
+
+<details>
+   <summary>Parameters</summary>
+
+| Parameter | Description |  
+| --- | --- |
+| -Name | The nameof the remote repository   |  
+
+</details>
+
+&nbsp;
+
+**Returns**
+[RepositoryModel] The repository model found. Throws if not found  
+
+---
+
+## GIT Cmdlets
 
 ### Install-Git
 Downloads and optionally installs the latest verion of git for windows  
@@ -95,6 +159,185 @@ $repositoryPath = Copy-Repository -Url $repo.RemoteUrl `
 
 **Returns**
 [string] the full path of the local repository  
+
+---
+
+&nbsp;  
+
+### Find-Branch
+indicates if the specified local branch of the given directory exists.
+
+**Example** 
+```
+if (Find-Branch -Directory $repositoryPath -Branch $branch) {
+    # do something because local branch exists
+}
+
+```
+
+<details>
+   <summary>Parameters</summary>
+
+| Parameter | Description |  
+| --- | --- |
+| -Directory | the local repo directory  |  
+| -Branch | the branch to find |  
+
+
+</details>
+
+&nbsp;
+
+**Returns**
+[bool] true if branch exists  
+
+---
+
+&nbsp;  
+
+### Switch-Branch
+Checks out the given branch from the given local repository
+
+**Example** 
+```
+if (Find-Branch -Directory $repositoryPath -Branch $branch) {
+   $rc = Switch-Branch -Directory $repositoryPath -Branch $branch
+}
+
+```
+
+<details>
+   <summary>Parameters</summary>
+
+| Parameter | Description |  
+| --- | --- |
+| -Directory | the local repo directory  |  
+| -Branch | the branch to find |  
+
+
+</details>
+
+&nbsp;
+
+**Returns**
+[int] the return code of the switch operation  
+
+---
+
+&nbsp;  
+
+### Remove-Branch
+Removes the specified local branch
+
+**Example** 
+```
+  Remove-Branch -Directory $repositoryPath -Branch $branch -Force
+
+```
+
+<details>
+   <summary>Parameters</summary>
+
+| Parameter | Description |  
+| --- | --- |
+| -Directory | the local repo directory  |  
+| -Branch | the branch to find |  
+| -Force | (Switch) remove the branch even if there are outstanding changes/commits |  
+
+</details>
+
+&nbsp;
+
+**Returns**
+[int] return code of the delete operation  
+
+---
+
+&nbsp;  
+
+### New-Branch
+Creates a new branch for the given local repository AND checks it out. If a remote branch with the same name exists, it will checkout that branch
+
+**Example** 
+```
+  # get remote repo
+  $repo = Find-DevopsRepository -Name $repoName
+  
+  # create new branch based on the default remote repo branch (main/master etc)
+  New-Branch -Directory $repositoryPath -Branch $branch -BaseBranch $repo.DefaultBranch
+
+```
+
+<details>
+   <summary>Parameters</summary>
+
+| Parameter | Description |  
+| --- | --- |
+| -Directory | the local repo directory  |  
+| -Branch | the branch to find |  
+| -BaseBranch | The base branch from which to create the new branch from |  
+
+</details>
+
+&nbsp;
+
+**Returns**
+[int] return code of the new branch operation  
+
+---
+
+&nbsp;  
+
+### Save-Repository
+Commits any changes to the given local repository
+
+**Example** 
+```
+  Save-Repository -Directory $repositoryPath -Message "A Commit message"
+
+```
+
+<details>
+   <summary>Parameters</summary>
+
+| Parameter | Description |  
+| --- | --- |
+| -Directory | the local repo directory  |  
+| -Message | The commit message |  
+
+</details>
+
+&nbsp;
+
+**Returns**
+[int] return code of the save operation  
+
+---
+
+&nbsp;  
+
+### Push-Repository
+Pushes changes to the remote repository. 
+
+**Example** 
+```
+  Push-Repository -Directory $repositoryPath -Branch $branch
+```
+
+<details>
+   <summary>Parameters</summary>
+
+| Parameter | Description |  
+| --- | --- |
+| -Directory | the local repo directory  |  
+| -Branch | (optional) use if the branch you want to push to is NOT the current branch |  
+
+</details>
+
+&nbsp;
+
+**Returns**
+[int] return code of the save operation  
 
 ---
 
