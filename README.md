@@ -34,12 +34,16 @@ Install-Module PS.Utilities
 
 ## Common Cmdlets
 # Set-DevopsCredentials
-Sets session-wide credentials for both git and devops 
+Sets session-wide credentials for both git and devops. You should call this as the first cmdlet in your script. The credentials will be stored for the entire PS session 
 
 **Example** 
 ```
 $patToken = "some-plain-text-Path-Token"
-Set-DevopsCredentials -PlaintextPassword $patToken -Organisation "your-devops-organisation" 
+$userName = "aperson@org.com"
+Set-DevopsCredentials -Username $userName -PlaintextPassword $patToken -Organisation "your-devops-organisation" 
+
+# .. do your git/devops stuff here
+
 ```
 
 <details>
@@ -63,7 +67,6 @@ Nothing
 ## Devops Cmdlets
 &nbsp;  
 # Find-DevopsRepository
-
 locates the remote devops repository specified by the -Name parameter. It will search all projects within the organisation defined in Set-DevopsCredentials
 
 **Example** 
@@ -114,10 +117,7 @@ $repo = Find-DevopsRepository -Name $repoName
 Returns a collection of devops projects from Set-DevopsCredentials 
 **Example** 
 ```
-$patToken = "some-plain-text-Path-Token"
-Set-DevopsCredentials -PlaintextPassword $patToken -Organisation "your-devops-organisation" 
 $projects = Get-DevopsProjects
- 
 ```
 
 #### ProjectModel
@@ -153,8 +153,6 @@ Returns a project definition from Set-DevopsCredentials
 
 **Example** 
 ```
-$patToken = "some-plain-text-Path-Token"
-Set-DevopsCredentials -PlaintextPassword $patToken -Organisation "your-devops-organisation" 
 $project = Get-DevopsProject
  
 ```
@@ -193,8 +191,6 @@ Returns a collection of repositories from a given devops project
 
 **Example** 
 ```
-$patToken = "some-plain-text-Path-Token"
-Set-DevopsCredentials -PlaintextPassword $patToken -Organisation "your-devops-organisation" 
 $projectRepositories = Get-DevopsRepositories -Name $projectName
 foreach ($repo in projectRepositories) {
    Write-Host "$($repo.RemoteUrl)"
@@ -246,8 +242,6 @@ Returns a repository from the given project
 
 **Example** 
 ```
-$patToken = "some-plain-text-Path-Token"
-Set-DevopsCredentials -PlaintextPassword $patToken -Organisation "your-devops-organisation" 
 $projectRepository = Get-DevopsRepository -ProjectName $projectName -Name $repositoryName
 ```
 #### RepositoryModel
