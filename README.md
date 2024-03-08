@@ -13,6 +13,10 @@ Install-Module PS.Utilities
    | --- | --- | --- |
    | [Set-DevopsCredentials](#set-devopscredentials) | Sets session-wide credentials | Git/Devops
    | [Find-DevopsRepository](#find-devopsrepository) | locates the remote devops repository | Devops
+   | [Get-DevopsProjects](#get-devopsprojects) | Returns a collection of devops projects | Devops
+   | [Get-DevopsProject](#get-devopsproject) | Returns a single project | Devops
+   | [Get-DevopsRepositories](#get-devopsrepositories) | Returns a collection of repositories from the given project | Devops
+   | [Get-DevopsRepository](#get-devopsrepository) | Returns a Repository model | Devops
    | [Test-Git](#test-git) | Test to see if git is installed | Git
    | [Install-Git](#install-git) | Installs Git | Git
    | [Copy-Repository](#install-git) | Clones a remote repository | Git
@@ -105,13 +109,197 @@ $repo = Find-DevopsRepository -Name $repoName
 
 ---
 
+&nbsp;  
+# Get-DevopsProjects
+Returns a collection of devops projects from Set-DevopsCredentials 
+**Example** 
+```
+$patToken = "some-plain-text-Path-Token"
+Set-DevopsCredentials -PlaintextPassword $patToken -Organisation "your-devops-organisation" 
+$projects = Get-DevopsProjects
+ 
+```
+
+#### ProjectModel
+```
+    public class ProjectModelCollection : List<ProjectModel>
+    {
+      public ProjectModel GetProjectByName(string name)
+      {
+          return this.FirstOrDefault(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));   
+      }
+    }    
+    
+    public class ProjectModel
+    {
+        public string Name { get; set; }
+
+        public Guid Id { get; set; }
+
+        public string Url { get; set; } 
+    }
+```
+
+&nbsp;
+
+**Returns**
+[ProjectModelCollection] A collection of devops projects
+
+---
+
+&nbsp;  
+# Get-DevopsProject
+Returns a project definition from Set-DevopsCredentials 
+
+**Example** 
+```
+$patToken = "some-plain-text-Path-Token"
+Set-DevopsCredentials -PlaintextPassword $patToken -Organisation "your-devops-organisation" 
+$project = Get-DevopsProject
+ 
+```
+#### ProjectModel
+```
+    public class ProjectModel
+    {
+        public string Name { get; set; }
+
+        public Guid Id { get; set; }
+
+        public string Url { get; set; } 
+    }
+```
+
+<details>
+   <summary>Parameters</summary>
+
+| Parameter | Description |  
+| --- | --- |
+| -Name | The nameof the remote project to find   |  
+
+</details>
+
+&nbsp;
+
+**Returns**
+[ProjectModel] A devop projects
+
+---
+
+&nbsp;  
+# Get-DevopsRepositories
+Returns a collection of repositories from a given devops project  
+
+**Example** 
+```
+$patToken = "some-plain-text-Path-Token"
+Set-DevopsCredentials -PlaintextPassword $patToken -Organisation "your-devops-organisation" 
+$projectRepositories = Get-DevopsRepositories -Name $projectName
+foreach ($repo in projectRepositories) {
+   Write-Host "$($repo.RemoteUrl)"
+}
+ 
+```
+#### RepositoryModel
+```
+    public class RepositoryModel
+    {
+        public Guid Id { get; set; }
+
+        public string Name { get; set; }
+
+        public string Url { get; set; }
+
+        public string DefaultBranch { get; set; }
+
+        public long Size { get; set; }
+
+        public string RemoteUrl { get; set; }
+
+        public bool IsDisabled { get; set; }
+
+        public Guid ProjectID { get; set; } 
+    } 
+```
+
+<details>
+   <summary>Parameters</summary>
+
+| Parameter | Description |  
+| --- | --- |
+| -Project | (optional) a devops project from a previous call to Get-DevopsProject(s) |  
+| -Name | the name of the project to retrieve the repositories from 
+
+</details>
+
+&nbsp;
+
+**Returns**
+[RepositoryModelCollection] A devop Repository
+---
+
+&nbsp;  
+# Get-DevopsRepository
+Returns a repository from the given project 
+
+**Example** 
+```
+$patToken = "some-plain-text-Path-Token"
+Set-DevopsCredentials -PlaintextPassword $patToken -Organisation "your-devops-organisation" 
+$projectRepository = Get-DevopsRepository -ProjectName $projectName -Name $repositoryName
+foreach ($repo in projectRepositories) {
+   Write-Host "$($repo.RemoteUrl)"
+}
+ 
+```
+#### RepositoryModel
+```
+    public class RepositoryModel
+    {
+        public Guid Id { get; set; }
+
+        public string Name { get; set; }
+
+        public string Url { get; set; }
+
+        public string DefaultBranch { get; set; }
+
+        public long Size { get; set; }
+
+        public string RemoteUrl { get; set; }
+
+        public bool IsDisabled { get; set; }
+
+        public Guid ProjectID { get; set; } 
+    } 
+```
+
+<details>
+   <summary>Parameters</summary>
+
+| Parameter | Description |  
+| --- | --- |
+| -Repositories | (optional) [RepositoryModelCollection] a collection of repositories from devops project from a previous call to Get-DevopsRepositories |  
+| -ProjectName | (optional) The name of the project that contains the project 
+| -Name | the name of the repository to retrieve  
+
+</details>
+
+&nbsp;
+
+**Returns**
+[RepositoryModel] A devop Repository
+---
+
 ## GIT Cmdlets
 # Test-Git
 Tests to see if git is installed.   
 
 **Example** 
 ```
-if (!Test-Git) {
+if (Test-Git) {
+   # do something with git  
+} else {
    Install-Git -AutoInstall
 }
 ```
