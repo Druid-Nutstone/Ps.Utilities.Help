@@ -24,7 +24,7 @@ Install-Module PS.Utilities
 
 
 ## Common Cmdlets
-### Set-DevopsCredentials
+# Set-DevopsCredentials
 Sets session-wide credentials for both git and devops 
 
 **Example** 
@@ -53,7 +53,8 @@ Nothing
 
 ## Devops Cmdlets
 &nbsp;  
-### Find-DevopsRepository
+# Find-DevopsRepository
+
 locates the remote devops repository specified by the -Name parameter. It will search all projects within the organisation defined in Set-DevopsCredentials
 
 **Example** 
@@ -102,8 +103,7 @@ $repo = Find-DevopsRepository -Name $repoName
 ---
 
 ## GIT Cmdlets
-
-### Install-Git
+# Install-Git
 Downloads and optionally installs the latest verion of git for windows  
 
 **Example** 
@@ -128,8 +128,7 @@ $gitExe = Install-Git -AutoInstall
 ---
 
 &nbsp;  
-
-### Copy-Repository
+# Copy-Repository
 Git Clones a remote devops repository to the specified local directory  
 
 **Example** 
@@ -164,7 +163,7 @@ $repositoryPath = Copy-Repository -Url $repo.RemoteUrl `
 
 &nbsp;  
 
-### Find-Branch
+# Find-Branch
 indicates if the specified local branch of the given directory exists.
 
 **Example** 
@@ -195,7 +194,7 @@ if (Find-Branch -Directory $repositoryPath -Branch $branch) {
 
 &nbsp;  
 
-### Switch-Branch
+# Switch-Branch
 Checks out the given branch from the given local repository
 
 **Example** 
@@ -226,7 +225,7 @@ if (Find-Branch -Directory $repositoryPath -Branch $branch) {
 
 &nbsp;  
 
-### Remove-Branch
+# Remove-Branch
 Removes the specified local branch
 
 **Example** 
@@ -255,7 +254,7 @@ Removes the specified local branch
 
 &nbsp;  
 
-### New-Branch
+# New-Branch
 Creates a new branch for the given local repository AND checks it out. If a remote branch with the same name exists, it will checkout that branch
 
 **Example** 
@@ -288,7 +287,7 @@ Creates a new branch for the given local repository AND checks it out. If a remo
 
 &nbsp;  
 
-### Save-Repository
+# Save-Repository
 Commits any changes to the given local repository
 
 **Example** 
@@ -316,7 +315,7 @@ Commits any changes to the given local repository
 
 &nbsp;  
 
-### Push-Repository
+# Push-Repository
 Pushes changes to the remote repository. 
 
 **Example** 
