@@ -13,14 +13,19 @@ Install-Module PS.Utilities
    | --- | --- | --- |
    | [Set-DevopsCredentials](#set-devopscredentials) | Sets session-wide credentials | Git/Devops
    | [Find-DevopsRepository](#find-devopsrepository) | locates the remote devops repository | Devops
+   | [Test-Git](#test-git) | Test to see if git is installed | Git
    | [Install-Git](#install-git) | Installs Git | Git
    | [Copy-Repository](#install-git) | Clones a remote repository | Git
    | [Find-Branch](#find-branch) | Checks local branch | Git
+   | [Get-Branches](#get-branches) | Gets a collection of local branches | Git
    | [Switch-Branch](#switch-branch) | Checks out local branch | Git
    | [Remove-Branch](#remove-branch) | Removes local branch | Git
    | [New-Branch](#new-branch) | Creates new local branch | Git
    | [Save-Repository](#save-repository) | Saves (commmits) local changes | Git
    | [Push-Repository](#push-repository) | pushes commited changes from local to remote repository | Git
+   | [Sync-Repository](#sync-repository) | Pulls latest changes to local repo | Git
+   | [Get-Tags](#get-tags) | Gets a List<string> of tags in the local repository | Git
+   | [New-Tag](#new-tag) | Creates a new tag at the current commit of a local repository | Git
 
 
 ## Common Cmdlets
@@ -61,10 +66,8 @@ locates the remote devops repository specified by the -Name parameter. It will s
 ```
 $repo = Find-DevopsRepository -Name $repoName
 # use $repo.RemoteUrl to target remote url 
- 
-
 ```
-### RepositoryModel
+#### RepositoryModel
 ```
     public class RepositoryModel
     {
@@ -103,6 +106,24 @@ $repo = Find-DevopsRepository -Name $repoName
 ---
 
 ## GIT Cmdlets
+# Test-Git
+Tests to see if git is installed.   
+
+**Example** 
+```
+if (!Test-Git) {
+   Install-Git -AutoInstall
+}
+```
+&nbsp;
+
+**Returns**
+the full path of the git executable OR null if it does not exist
+
+---
+
+&nbsp;
+
 # Install-Git
 Downloads and optionally installs the latest verion of git for windows  
 
@@ -189,6 +210,50 @@ if (Find-Branch -Directory $repositoryPath -Branch $branch) {
 
 **Returns**
 [bool] true if branch exists  
+
+---
+
+&nbsp;  
+# Get-Branches
+Gets a list of branches for the specified local reporitory 
+
+**Example** 
+```
+$branches = Get-Branches -DirectoryName $repoName
+foreach ($branch in $branches) {
+   Write-Host "$($branch.Path)"
+}
+
+```
+
+### GitBranchCollection
+```
+    public class GitBranch
+    {
+        public string Name { get; set; }
+
+        public bool IsRemote { get; set; } = false;
+
+        public bool IsCurrent { get; set; } = false;
+
+        public string Path { get; set; }
+
+    }
+```
+
+<details>
+   <summary>Parameters</summary>
+
+| Parameter | Description |  
+| --- | --- |
+| -Directory | Local path of local repository   |  
+
+</details>
+
+&nbsp;
+
+**Returns**
+[GitBranchCollection] Array {List<>} of GitBranch
 
 ---
 
@@ -337,6 +402,87 @@ Pushes changes to the remote repository.
 
 **Returns**
 [int] return code of the save operation  
+
+---
+&nbsp;
+
+# Sync-Repository
+Pulls latest changes to local repository for the given branch. 
+
+**Example** 
+```
+  $rc = Sync-Repository -Directory $repositoryPath -Branch $branch
+```
+
+<details>
+   <summary>Parameters</summary>
+
+| Parameter | Description |  
+| --- | --- |
+| -Directory | The local repo directory  |  
+| -Branch | (optional) Branch you want to pull changes for  |  
+
+</details>
+
+&nbsp;
+
+**Returns**
+[int] return code of the pull operation  
+
+---
+
+&nbsp;
+
+# Get-Tags
+Gets a collection of tags for the given local repository. 
+
+**Example** 
+```
+  $tags = Get-Tags -Directory $repositoryPath -Branch $branch
+```
+
+<details>
+   <summary>Parameters</summary>
+
+| Parameter | Description |  
+| --- | --- |
+| -Directory | The local repo directory  |  
+| -Branch | (optional) Branch you want to get tags for  |  
+
+</details>
+
+&nbsp;
+
+**Returns**
+[List<system.string>] List of tags associated with this repo/branch  
+
+---
+
+&nbsp;
+
+# New-Tag
+Creates a new Tag at the current commit of a local repository 
+
+**Example** 
+```
+  $rc = New-Tag -Directory $repositoryPath -Tag "23234" -Message "Tag description"
+```
+
+<details>
+   <summary>Parameters</summary>
+
+| Parameter | Description |  
+| --- | --- |
+| -Directory | The local repo directory  |  
+| -Tag | The tag name to add to the current commit  |  
+| -Message | (optional) description to add to the tag
+
+</details>
+
+&nbsp;
+
+**Returns**
+[int] Return code of the tag operation  
 
 ---
 
