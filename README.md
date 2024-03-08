@@ -1,79 +1,72 @@
 # Ps.Utilities Help (This is NOT complete - i'm working on it!)
 
-## Overview 
+# Overview 
 PS.Utilies is a c# .NET standard 2.0 set of powershell cmdlets that wrap common (windows azure) **developer** utilities' Currently it supports **GIT** and **AZURE Devops**
 
-## Installation
+# Installation
+```
 Install-Module PS.Utilities
+```
+&nbsp;  
 
-## Cmdlets (Common)
-
-<details>
-<summary>Set-DevopsCredentials</summary>
-
-### Sets session-wide credentials for both git and devops 
-
-**Options**
-
-| Parameter | Description                                                                                          | Mandatory |
-| --------- | ---------------------------------------------------------------------------------------------------- | --------- |
-| Username  |  Username to use to authenticate with git / azure | False | 
-| PlainTextPassword | the PAT token to use to authenticate with remptes devops | True | 
-| Organisation | the devops organisation name (i.e https://devop://dev.azure.com/<em>**organisation**<em>/blah) | True | 
-
-**Returns**
-Nothing
+---
+### Set-DevopsCredentials
+Sets session-wide credentials for both git and devops 
 
 **Example** 
 ```
 $patToken = "some-plain-text-Path-Token"
 Set-DevopsCredentials -PlaintextPassword $patToken -Organisation "your-devops-organisation" 
 ```
- 
-</details>
-
-## Cmdlets (Git) 
 
 <details>
- <summary>Install-Git</summary>
- 
- ### Downloads and optionally installs the latest verion of git for windows  
+   <summary>Parameters</summary>
 
-**Options**
+   | Parameter | Description |  
+   | --- | --- |
+   | -Username  |  Username to use to authenticate with git / azure | 
+   | -PlainTextPassword | the PAT token to use to authenticate with remptes devops | 
+   | -Organisation | the devops organisation name (i.e https://devop://dev.azure.com/<em>**organisation**<em>/blah) |  
 
-| Parameter | Description                                                                                          | Mandatory |
-| --------- | ---------------------------------------------------------------------------------------------------- | --------- |
-| AutoInstall | switch parameter which (if specified) installs git to the local users %appdata% | False | 
+</details>
+
+&nbsp;
 
 **Returns**
+Nothing
 
-[string] the full path of the git executable
+---
+
+&nbsp;  
+
+### Install-Git
+Downloads and optionally installs the latest verion of git for windows  
 
 **Example** 
 ```
 $gitExe = Install-Git -AutoInstall 
 ```
-</details>
 
 <details>
-<summary>Copy-Repository</summary>
+   <summary>Parameters</summary>
 
-### Git Clones a remote devops repository 
+   | Parameter | Description |  
+   | --- | --- |
+   | -AutoInstall | switch parameter which (if specified) installs git to the local users directory
 
-**Options**
+</details>
 
-| Parameter | Description                                                                                          | Mandatory |
-| --------- | ---------------------------------------------------------------------------------------------------- | --------- |
-| Url | the remote url of the repository to clone (see **Find-DevopsRepository** to get this from a repo name | True | 
-| User | the user name to authenticate (not required if Set-DevopsCredentials is used | False | 
-| Password | the password to authenticate (not required if Set-DevopsCredentials is used | False | 
-| Directory | the local directory to clone into | True | 
-| Branch | the branch to pull | False | 
-| Force | (switch parameter) if the repos already exists it will be deleted and re-created | False | 
+&nbsp;
 
 **Returns**
+[string] the full path of the git executable
 
-[string] the full path of the local repository  
+---
+
+&nbsp;  
+
+### Copy-Repository
+Git Clones a remote devops repository to the specified local directory  
 
 **Example** 
 ```
@@ -83,8 +76,31 @@ $repositoryPath = Copy-Repository -Url $repo.RemoteUrl `
                                   -Directory "C:\Deleteme" `
                                   -Force
 ```
- 
+
+<details>
+   <summary>Parameters</summary>
+
+| Parameter | Description |  
+| --- | --- |
+| -Url | the remote url of the repository to clone (see **Find-DevopsRepository** to get this from a repo name | 
+| -User | the user name to authenticate (not required if Set-DevopsCredentials is used |  
+| -Password | the password to authenticate (not required if Set-DevopsCredentials is used |  
+| -Directory | the local directory to clone into |  
+| -Branch | the branch to pull |  
+| -Force | (switch parameter) if the repos already exists it will be deleted and re-created |  
+
 </details>
+
+&nbsp;
+
+**Returns**
+[string] the full path of the local repository  
+
+---
+
+&nbsp;
+&nbsp;
+&nbsp;
 
 ## Examples 
 # Clone, update, commit, push a repository and create a pull request , and complete it !
