@@ -249,9 +249,6 @@ Returns a repository from the given project
 $patToken = "some-plain-text-Path-Token"
 Set-DevopsCredentials -PlaintextPassword $patToken -Organisation "your-devops-organisation" 
 $projectRepository = Get-DevopsRepository -ProjectName $projectName -Name $repositoryName
-foreach ($repo in projectRepositories) {
-   Write-Host "$($repo.RemoteUrl)"
-}
 ```
 #### RepositoryModel
 ```
@@ -290,6 +287,7 @@ foreach ($repo in projectRepositories) {
 
 **Returns**
 [RepositoryModel] A devops Repository
+
 ---
 
 ## GIT Cmdlets
