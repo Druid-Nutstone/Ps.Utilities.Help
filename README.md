@@ -1,7 +1,15 @@
 # Ps.Utilities Help 
 
 # Overview 
-PS.Utilies is a c# .NET standard 2.0 set of powershell cmdlets that wrap common (windows azure) **developer** utilities' Currently it supports **GIT/Azure Devops/Excel**
+PS.Utilies is a c# .NET standard 2.0 set of powershell cmdlets that wraps the following utilities :- 
+
+<ol>
+  <li>Git - wraps many usefull git commands</li>
+  <li>Devops - Uses the azure api to manipulate azure devops projects/repositories and pipelines
+  <li>Excel - provides wrappers to read and write Excel files using the excellent Spread sheet Light library.   
+</ol>
+
+see: [Spread sheet light](https://spreadsheetlight.com/)
 
 # Installation
 ```
@@ -17,6 +25,11 @@ Install-Module PS.Utilities
    | [Get-DevopsProject](#get-devopsproject) | Returns a single project | Devops
    | [Get-DevopsRepositories](#get-devopsrepositories) | Returns a collection of repositories from the given project | Devops
    | [Get-DevopsRepository](#get-devopsrepository) | Returns a Repository model | Devops
+   | [Get-DevopsPipelines](#get-devopspipelines) | Returns a collection of pipelines |
+   | [Invoke-DevopsPipeline](#invoke-devopspipeline) | invokes the given pipeline |
+   | [Wait-DevopsPipeline](#wait-devopspipeline) | Waits for a devops pipeline to complete
+   | [New-DevopsPullRequest]() | TO DO | 
+   | [Complete-DevopsPullRequest]() | TO DO |
    | [Test-Git](#test-git) | Test to see if git is installed | Git
    | [Install-Git](#install-git) | Installs Git | Git
    | [Copy-Repository](#install-git) | Clones a remote repository | Git
@@ -42,6 +55,9 @@ $patToken = "some-plain-text-Path-Token"
 $userName = "aperson@org.com"
 Set-DevopsCredentials -Username $userName -PlaintextPassword $patToken -Organisation "your-devops-organisation" 
 
+## to use existing credentials of a previously pulled repository you can use
+Set-DevopsCredentials -Organisation -FromRepository "C:\\somelocalRepository"
+
 # .. do your git/devops stuff here
 
 ```
@@ -51,9 +67,10 @@ Set-DevopsCredentials -Username $userName -PlaintextPassword $patToken -Organisa
 
    | Parameter | Description |  
    | --- | --- |
-   | -Username  |  Username to use to authenticate with git / azure | 
-   | -PlainTextPassword | the PAT token to use to authenticate with remptes devops | 
+   | -Username  | (optional) Username to use to authenticate with git / azure | 
+   | -PlainTextPassword | (optional if using -FromRepository) the PAT token to use to authenticate with remptes devops | 
    | -Organisation | the devops organisation name (i.e https://devop://dev.azure.com/<em>**organisation**<em>/blah) |  
+   | -FromRepository | An existing repository to use (fropm the remote.url git config definition)
 
 </details>
 
@@ -173,6 +190,7 @@ $project = Get-DevopsProject
 
 | Parameter | Description |  
 | --- | --- |
+| -Projects | [ProjectModelCollection] (from Get-DevopsProjects) |  
 | -Name | The nameof the remote project to find   |  
 
 </details>
@@ -271,7 +289,7 @@ $projectRepository = Get-DevopsRepository -ProjectName $projectName -Name $repos
 
 | Parameter | Description |  
 | --- | --- |
-| -Repositories | (optional) RepositoryModelCollection a collection of repositories from devops project from a previous call to Get-DevopsRepositories |  
+| -Repositories | (optional) [RepositoryModelCollection] a collection of repositories from devops project from a previous call to Get-DevopsRepositories |  
 | -ProjectName | (optional) The name of the project that contains the project |
 | -Name | the name of the repository to retrieve | 
 
@@ -281,6 +299,188 @@ $projectRepository = Get-DevopsRepository -ProjectName $projectName -Name $repos
 
 **Returns**
 [RepositoryModel] A devops Repository
+
+---
+
+&nbsp;  
+# Get-DevopsPipelines
+Returns a collection of devopspipelines associated with the given project or all pipelines in the organisation   
+
+**Example** 
+```
+
+# to get ALL pipelines in the current organisation
+$allPipelines = Get-DevopsPipelines 
+
+# to get a specific pipeline (by name) across all projects
+$pipeline = Get-DevopsPipelines -Name $pipelineModelName   
+
+#to get all pipelines in a specific project
+$projectPipelines = Get-DevopsPipelines -Project $projectName 
+
+# or any combination of parameters !
+
+```
+#### PipelineModelCollection
+```
+    public class PipelineModelCollection : List<PipelineModel>  
+    {
+    }
+    
+    public class PipelineModel
+    {
+        public string Url { get; set; }
+
+        public long Id { get; set; }
+
+        public string Name { get; set; }
+
+        public string Folder { get; set; }
+
+        public Guid ProjectId { get; set; } 
+    }
+```
+
+<details>
+   <summary>Parameters</summary>
+
+| Parameter | Description |  
+| --- | --- |
+| -Projects | (optional) [ProjectModelCollection] a collection of projects |  
+| -ProjectName | (optional) The name of the project that contains the pipelines |
+| -Name | the name of the pipeline to retrieve | 
+
+</details>
+
+&nbsp;
+
+**Returns**
+[PipelineModelCollection] A collection of devops project pipelines
+
+---
+
+&nbsp;  
+# Invoke-DevopsPipeline
+Invokes a devops pipeline and returns a pipeline response including the id of the pipeline 
+
+**Example** 
+```
+# fron a pipeline model 
+$pipelineResult = Invoke-Pipeline -Pipeline $pipelineModel 
+
+# a specific pipeline name 
+$pipelineResult = Invoke-Pipeline -NAme $pipelineName
+```
+#### PipelineModelCollection
+```
+    public class RunPipelineResponseModel
+    {
+        public string CreatedDateString {  get; set; }
+
+        public DateTime CreatedDate { get; set; } = DateTime.MinValue;  
+
+        public string FinishedDateString { get; set; }
+
+        public DateTime FinishedDate { get; set; } = DateTime.MinValue;
+
+        public long Id { get; set; }
+
+         public string Name  { get; set; }
+
+         public string RunResultString { get; set; }
+
+        public string RunStateString { get; set; }
+
+        public RunResult RunResult { get; set; } = RunResult.Unknown;
+
+        public RunState RunState { get; set; } = RunState.Unknown;
+
+        public bool IsRunning { get; set; } = false;
+
+        public bool IsCompleted { get; set; } = false;  
+
+        public bool HasWorked { get; set; } = false;    
+
+        public Guid ProjectId { get; set; } 
+    }
+```
+
+<details>
+   <summary>Parameters</summary>
+
+| Parameter | Description |  
+| --- | --- |
+| -Pipeline | (optional) [PipelineModel] pipeline model |  
+| -Name | the name of the pipeline to invoke | 
+
+</details>
+
+&nbsp;
+
+**Returns**
+[RunPipelineResponseModel] The pipeline response 
+
+---
+
+&nbsp;  
+# Wait-DevopsPipeline
+Waits for a devops pipeline to complete and returns an indicator [bool] as to wether it has completed successfully.
+
+**Example** 
+```
+$devopsPipelineResult = Invoke-DevopsPipeline -Name $myPipeline | Wait-DevopsPipeline
+
+Write-Host "Pipeline has pipeline worked $($devopsPipelineResult)"
+
+```
+#### PipelineModelCollection
+```
+    public class RunPipelineResponseModel
+    {
+        public string CreatedDateString {  get; set; }
+
+        public DateTime CreatedDate { get; set; } = DateTime.MinValue;  
+
+        public string FinishedDateString { get; set; }
+
+        public DateTime FinishedDate { get; set; } = DateTime.MinValue;
+
+        public long Id { get; set; }
+
+         public string Name  { get; set; }
+
+         public string RunResultString { get; set; }
+
+        public string RunStateString { get; set; }
+
+        public RunResult RunResult { get; set; } = RunResult.Unknown;
+
+        public RunState RunState { get; set; } = RunState.Unknown;
+
+        public bool IsRunning { get; set; } = false;
+
+        public bool IsCompleted { get; set; } = false;  
+
+        public bool HasWorked { get; set; } = false;    
+
+        public Guid ProjectId { get; set; } 
+    }
+```
+
+<details>
+   <summary>Parameters</summary>
+
+| Parameter | Description |  
+| --- | --- |
+| -Pipeline | (optional) [PipelineModel] pipeline model |  
+| -Name | the name of the pipeline to invoke | 
+
+</details>
+
+&nbsp;
+
+**Returns**
+[RunPipelineResponseModel] The pipeline response 
 
 ---
 
