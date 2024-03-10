@@ -4,9 +4,9 @@
 PS.Utilies is a c# .NET standard 2.0 set of powershell cmdlets that wraps the following utilities :- 
 
 <ol>
-  <li>Git - wraps many usefull git commands</li>
-  <li>Devops - Uses the azure api to manipulate azure devops projects/repositories and pipelines
-  <li>Excel - provides wrappers to read and write Excel files using the excellent Spread sheet Light library.   
+  <li><strong>Git</strong> - wraps many usefull git commands</li>
+  <li><strong>Devops</strong> - Uses the azure api to manipulate azure devops projects/repositories and pipelines
+  <li><strong>Excel</strong> - provides wrappers to read and write Excel files using the excellent <strong>Spread sheet Light</strong> library. Usefull for allowing users to populate input data using a toolthey are used tool.   
 </ol>
 
 see: [Spread sheet light](https://spreadsheetlight.com/)
@@ -25,9 +25,9 @@ Install-Module PS.Utilities
    | [Get-DevopsProject](#get-devopsproject) | Returns a single project | Devops
    | [Get-DevopsRepositories](#get-devopsrepositories) | Returns a collection of repositories from the given project | Devops
    | [Get-DevopsRepository](#get-devopsrepository) | Returns a Repository model | Devops
-   | [Get-DevopsPipelines](#get-devopspipelines) | Returns a collection of pipelines |
-   | [Invoke-DevopsPipeline](#invoke-devopspipeline) | invokes the given pipeline |
-   | [Wait-DevopsPipeline](#wait-devopspipeline) | Waits for a devops pipeline to complete
+   | [Get-DevopsPipelines](#get-devopspipelines) | Returns a collection of pipelines | Devops |
+   | [Invoke-DevopsPipeline](#invoke-devopspipeline) | invokes the given pipeline | Devops |
+   | [Wait-DevopsPipeline](#wait-devopspipeline) | Waits for a devops pipeline to complete | Devops |
    | [New-DevopsPullRequest]() | TO DO | 
    | [Complete-DevopsPullRequest]() | TO DO |
    | [Test-Git](#test-git) | Test to see if git is installed | Git
