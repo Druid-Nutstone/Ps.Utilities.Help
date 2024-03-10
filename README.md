@@ -43,6 +43,13 @@ Install-Module PS.Utilities
    | [Sync-Repository](#sync-repository) | Pulls latest changes to local repo | Git
    | [Get-Tags](#get-tags) | Gets a List<string> of tags in the local repository | Git
    | [New-Tag](#new-tag) | Creates a new tag at the current commit of a local repository | Git
+   | [New-Excel](#new-excel) | Creates a new Excel Application Instance | Excel | 
+   | [Open-Excel](#open-excel) | Opens an existing spread sheet | Excel |
+   | [Set-ExcelData](#set-exceldata) | Populates the given worksheet with an array of PS class data | Excel |
+   | [Set-ExcelRowProperty](#set-excelrowproperty) | Sets the properties of the specified row and wporksheet | Excel
+   | [Save-Excel](#save-excel) | Saves the given excelapplication to an excel file | Excel |
+   | [Get-ExcelData](#get-exceldata) | Gets data from the given excelapplication and returns a .net List of type | Excel  
+   | [Select-ExcelWorkSheet](#select-excelworksheet) | Makes the given worksheet the default worksheet for other operations | Excel | 
 
 
 ## Common Cmdlets
@@ -867,11 +874,234 @@ Creates a new Tag at the current commit of a local repository
 ---
 
 &nbsp;
+## Excel Cmdlets
+
+&nbsp;
+# New-Excel
+Creates a new Excel Application and returns [ExcelApplication] 
+
+**Example** 
+```
+  # create an empty excelapplication
+  $excelApp = New-Excel
+
+  # create a new excel application and create new (default) worksheet named "worksheet1"
+  $excelApp = New Excel -Worksheet "worksheet1" 
+```
+<details>
+   <summary>Parameters</summary>
+
+| Parameter | Description |  
+| --- | --- |
+| -Worksheet | (optional) create a new worksheet |  
+</details>
+
+&nbsp;
+
+**Returns**
+[ExcelApplication] instance of an excel application
+
+---
+
+&nbsp;
+# Open-Excel
+Opens an existing excel file and returns [ExcelApplication] 
+
+**Example** 
+```
+  $excelApp = New-Excel | Open-Excel -Filename "C:\\SomeFile.xlsx" 
+```
+<details>
+   <summary>Parameters</summary>
+
+| Parameter | Description |  
+| --- | --- |
+| -Application | [ExcelApplication] |  
+</details>
+
+&nbsp;
+
+**Returns**
+[ExcelApplication] instance of the excel application
+
+---
+
+&nbsp;
+# Set-ExcelData
+Populates an excel Application worksheet (or default) with the contents of a PS class 
+
+**Example** 
+```
+  class TestExcelData {
+    [string]$Excel_String_Column
+    [decimal]$Excel_Decimal_Column
+    
+    TestExcelData() {}
+
+    TestExcelData([string]$Col1, [decimal]$Col2) {
+        $this.Excel_String_Column = $Col1
+        $this.Excel_Decimal_Column = $Col2
+    }
+
+   $dataAray = @()
+
+   $dataAray += New-Object TestExcelData -ArgumentList "row 1 column 1", 1.0
+   $dataAray += New-Object TestExcelData -ArgumentList "row 1 column 2", 1.1
+
+   $excelApp = New-Excel | Set-ExcelData -Data $dataAray -UsePropertyNameAsHeader -AutoFitColumns 
+} 
+```
+<details>
+   <summary>Parameters</summary>
+
+| Parameter | Description |  
+| --- | --- |
+| -Application | [ExcelApplication] |  
+| -Data | PS class Array of data |
+| -UsePropertyNameAsHeader | (optional) the property names of the input class will be used as the header names (row 1) of the worksheet |
+| -AutoFitColumns | (Optional) (SwitchParameter) alter columns to fit their content |
+| -Worksheet | (optional) Switches to or creates a worksheet to hold the class data |
+
+</details>
+
+&nbsp;
+
+**Returns**
+[ExcelApplication] instance of the excel application
+
+---
+
+&nbsp;
+# Set-ExcelRowProperty
+Sets the row properties of a given row (and  worksheet) and returns [ExcelApplication] 
+
+**Example** 
+```
+  $excelApp = New-Excel | Set-ExcelRowProperty -Row 1 -ForeColour White -BackColour Black -Freeze -Worksheet "Worksheet1"
+```
+<details>
+   <summary>Parameters</summary>
+
+| Parameter | Description |  
+| --- | --- |
+| -Application | [ExcelApplication] | 
+| -Row | row number (starts at 1) |  
+| -ForeColour | (optional) The fore colour of the row | 
+| -BackColour | (optional) The backgound colour of the row |
+| -Freeze | (switchparameter) Freeze the row so it does not move during user page operations | 
+| -Worksheet | (Optional) The names of the worksheet 
+
+</details>
+
+&nbsp;
+
+**Returns**
+[ExcelApplication] instance of the excel application
+
+---
+
+&nbsp;
+# Save-Excel
+Saves the ExcelApplication to the given filename and returns [ExcelApplication] 
+
+**Example** 
+```
+  New-Excel | Save-Excel -Filename "C:\\somewhere.xlsx"
+```
+<details>
+   <summary>Parameters</summary>
+
+| Parameter | Description |  
+| --- | --- |
+| -Application | [ExcelApplication] | 
+| -Filename | excel filenane.(replaced if it already exists) |  
+
+</details>
+
+&nbsp;
+
+---
+
+&nbsp;
+# Get-ExcelData 
+Returns a PS.Class array of data from an existing worksheetand returns [ExcelApplication] 
+**note** each property of the given type is matched with a row header value. so only the columns that macth a property are returned  
+
+**Example** 
+```
+  class TestExcelData {
+    [string]$Excel_String_Column
+    [decimal]$Excel_Decimal_Column
+    
+    TestExcelData() {}
+
+    TestExcelData([string]$Col1, [decimal]$Col2) {
+        $this.Excel_String_Column = $Col1
+        $this.Excel_Decimal_Column = $Col2
+   }
+
+   $data = New-Excel `
+     | Open-Excel -Filename $excelFile `
+     | Get-ExcelData -DataType TestExcelData  -Worksheet "David"
+
+  foreach ($dat in $data) {
+      Write-Host "$($dat.Excel_String_Column) $($dat.Excel_Decimal_Column)"
+  }   
+```
+<details>
+   <summary>Parameters</summary>
+
+| Parameter | Description |  
+| --- | --- |
+| -Application | [ExcelApplication] | 
+| -DataType | Type of the array to return. |  
+| -Worksheet | (Optional) name of worksheet to extract data from 
+
+</details>
+
+&nbsp;
+
+**Returns**
+[Array] .net generic list of -DataType  
+
+---
+
+&nbsp;
+# Select-ExcelWorkSheet 
+Selects the given worksheet in the ExcelApplication instance and returns [ExcelApplication] 
+
+**Example** 
+```
+   $excelApp = New-Excel `
+     | Open-Excel -Filename $excelFile `
+     | Select-ExcelWorkSheet -Worksheet "David"
+```
+<details>
+   <summary>Parameters</summary>
+
+| Parameter | Description |  
+| --- | --- |
+| -Application | [ExcelApplication] | 
+| -Worksheet | Name of worksheet to use 
+
+</details>
+
+&nbsp;
+
+**Returns**
+[ExcelApplication] The excelapplication instance
+
+---
+
+&nbsp;
 &nbsp;
 &nbsp;
 
-## Examples 
-# Clone, update, commit, push a repository and create a pull request , and complete it !
+# Examples 
+
+## GIT/Devops
+
+# Clone, update, commit, push a repository and create a pull request , and complete it 
 ```
 Import-Module PS.Utilities
 
@@ -929,5 +1159,58 @@ Write-Host ($pullRequestResponse | Format-List | Out-String)
 Write-Host ($pullRequestResponse.CreatedBy | Format-List | Out-String) 
 ```
 
+&nbsp;
+&nbsp;
+
+## Excel 
+
+### Create and read excel spreadsheet 
+``` 
+Import-Module PS.Utilities
+
+class TestExcelData {
+    [string]$Excel_String_Column
+    [decimal]$Excel_Decimal_Column
+    
+    TestExcelData() {}
+
+    TestExcelData([string]$Col1, [decimal]$Col2) {
+        $this.Excel_String_Column = $Col1
+        $this.Excel_Decimal_Column = $Col2
+    }
+}
+
+$global:excelFile = "C:\\deleteme\\TestExcelPS.xlsx"
+
+# create a excel spreadsheet 
+function CreateSpreadsheet() {
+   $dataAray = @()
+
+   $dataAray += New-Object TestExcelData -ArgumentList "hello 1 this is a very long to see if it will expand ",123.1
+   $dataAray += New-Object TestExcelData -ArgumentList "hello 2",3123123.1
+
+   $excelApp = New-Excel -Worksheet "David" `
+                         | Set-ExcelData -Data $dataAray -UsePropertyNameAsHeader -AutoFitColumns `
+                         | Set-ExcelRowProperty -Row 1 -ForeColour White -BackColour Black -Freeze `
+                         | Save-excel -Filename $excelFile
+}
+
+function LoadSpreadsheet() {
+# load the spreadhseet and display the contents 
+
+  $data = New-Excel `
+     | Open-Excel -Filename $excelFile `
+     | Select-ExcelWorkSheet -Worksheet "David" `
+     | Get-ExcelData -DataType TestExcelData 
+
+  foreach ($dat in $data) {
+      Write-Host "$($dat.Excel_String_Column) $($dat.Excel_Decimal_Column)"
+  }   
+}
+
+
+CreateSpreadsheet
+LoadSpreadsheet
+```
 
 
