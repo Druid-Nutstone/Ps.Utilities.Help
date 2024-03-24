@@ -6,7 +6,8 @@ PS.Utilies is a c# .NET standard 2.0 set of powershell cmdlets that wraps the fo
 <ol>
   <li><strong>Git</strong> - wraps many usefull git commands</li>
   <li><strong>Devops</strong> - Uses the azure api to manipulate azure devops projects/repositories and pipelines
-  <li><strong>Excel</strong> - provides wrappers to read and write Excel files using the excellent <strong>Spread sheet Light</strong> library. Usefull for allowing users to populate input data using a toolthey are used tool.   
+  <li><strong>Excel</strong> - provides wrappers to read and write Excel files using the excellent <strong>Spread sheet Light</strong> library. Usefull for allowing users to populate input data using a toolthey are used tool. 
+  <li><strong>DotNet</strong> - access to dotnet cli   
 </ol>
 
 see: [Spread sheet light](https://spreadsheetlight.com/)
@@ -1092,6 +1093,42 @@ Selects the given worksheet in the ExcelApplication instance and returns [ExcelA
 [ExcelApplication] The excelapplication instance
 
 ---
+
+## Dotnet Cmdlets
+&nbsp; 
+# New-DotNetProcess 
+Runs the given dotnet process 
+
+**Example** 
+```
+$rootProj = "C:\\somedirectory\\subdir\\"
+$projToRun = "$($rootProj)myconsoleapp.csproj"
+
+New-DotNetProcess -Project $projToRun `
+                  -WindowStyle Minimized `
+                  -Pull ` # pull lates version first
+                  -Name "My Program" # -Wait 
+```
+<details>
+   <summary>Parameters</summary>
+
+| Parameter | Description |  
+| --- | --- |
+| -Project | Full path to project | 
+| -WindowStyle | Window style of console app (Minimized,Normal etc)
+| -Pull | Pull the latest version of the 'current' branch |
+| -Branch | Switch to this branch (before run/pull) |
+| -Name | Update the window text name   
+
+</details>
+
+&nbsp;
+
+**Returns**
+[Process] The process that is started 
+
+---
+
 
 &nbsp;
 &nbsp;
