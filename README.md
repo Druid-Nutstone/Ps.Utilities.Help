@@ -7,7 +7,8 @@ PS.Utilies is a c# .NET standard 2.0 set of powershell cmdlets that wraps the fo
   <li><strong>Git</strong> - wraps many usefull git commands</li>
   <li><strong>Devops</strong> - Uses the azure api to manipulate azure devops projects/repositories and pipelines
   <li><strong>Excel</strong> - provides wrappers to read and write Excel files using the excellent <strong>Spread sheet Light</strong> library. Usefull for allowing users to populate input data using a toolthey are used tool. 
-  <li><strong>DotNet</strong> - access to dotnet cli   
+  <li><strong>DotNet</strong> - access to dotnet cli  
+  <li><strong>Visual Studio</strong> - call visual studio command line (automatically finds the latest version of VS that is installed) 
 </ol>
 
 see: [Spread sheet light](https://spreadsheetlight.com/)
@@ -51,6 +52,10 @@ Install-Module PS.Utilities
    | [Save-Excel](#save-excel) | Saves the given excelapplication to an excel file | Excel |
    | [Get-ExcelData](#get-exceldata) | Gets data from the given excelapplication and returns a .net List of type | Excel  
    | [Select-ExcelWorkSheet](#select-excelworksheet) | Makes the given worksheet the default worksheet for other operations | Excel | 
+   | [Invoke-DotNetProcess](#invoke-dotnetprocess) | Runs the given local csproj project | DotNet
+   | [Start-DotNetCommand](#start-dotnetcommand) | Runs any dotnet cli command and returns the results | DotNet 
+   | [Invoke-VisualStudioBuild](#invoke-visualstudiobuild) | Builds a project or solution using visual studio (devenv) | Visual Studio |
+   | [Start-VisualStudioCommand](#start-visualstudiocommand) | runs the specified visual studio command line against the given project or solution | Visual Studio | 
 
 
 ## Common Cmdlets
@@ -1096,8 +1101,8 @@ Selects the given worksheet in the ExcelApplication instance and returns [ExcelA
 
 ## Dotnet Cmdlets
 &nbsp; 
-# New-DotNetProcess 
-Runs the given dotnet process 
+# Invoke-DotNetProcess 
+Runs the given dotnet process on the current machine (e.g for micro services)  
 
 **Example** 
 ```
@@ -1126,6 +1131,115 @@ New-DotNetProcess -Project $projToRun `
 
 **Returns**
 [Process] The process that is started 
+
+---
+
+&nbsp; 
+# Start-DotNetCommand 
+Runs the given dotnet command within the same process OR in a new command window   
+
+**Example** 
+```
+$dotnetCommand = "--version"
+
+Start-DotNetCommand -Command $dotnetCommand `
+                  -Directory "C:\\somehere\\nice" `
+                  -NewWindow ` # run in new external cmd process 
+                  -WindowStyle Minimized 
+                  #-wait  if speified waits for the command to complete if newWindow specified
+```
+<details>
+   <summary>Parameters</summary>
+
+| Parameter | Description |  
+| --- | --- |
+| -Command | full dotnet cli command  | 
+| -Directory | optional starting directory |
+| -NewWindow | (switch parameter) if specified starts the dotnet command in a seperate process |
+| -WindowStyle | for external process what type of winow (Normal, Mazimized etc) |
+| -Wait | (switch parameter) if specified waits for the process to end (if NewWindow is specified)  |
+| -Console | (switch parameter) if (specified and it is Not an external process the result of the command is returned as an array of string (list<>)  
+
+</details>
+
+&nbsp;
+
+**Returns**
+<br>
+[Process] if (-NewWindow) is specified it returns the Process associated with the command window 
+
+[List<>] if -Console specified the result of the command is returned as a generic strin glist 
+
+[rc] if the command fails the return code is returned 
+
+---
+
+## Visual Studio Cmdlets
+&nbsp; 
+&nbsp; 
+# Invoke-VisualStudioBuild 
+Builds the given project using the latest version of Visual Studio that is installed on the local machine. This tends to work better than dotnet build and msbuild     
+
+**Example** 
+```
+$vsProject = "C:\\somewhere\nic\my.csproj"
+
+$consoleLogs = Invoke-VisualStudioBuild -Project $vsProject `
+                                        -Console
+```
+<details>
+   <summary>Parameters</summary>
+
+| Parameter | Description |  
+| --- | --- |
+| -Project | full path to the solution or project file to build  | 
+| -Console | (switch parameter) if specified returns a list<> of the ouput from the build |
+ 
+
+</details>
+
+&nbsp;
+
+**Returns**
+<br>
+[List<>] if (-Console) is specified it returns the List<> (string) of the output 
+
+[int] if (-Console) is not spefified returns the return code of the process 
+
+---
+
+&nbsp; 
+# Start-VisualStudioCommand 
+Executes the given devenv command against the given solution or project using the latest version of Visual Studio that is installed on the local machine. This tends to work better than dotnet build and msbuild     
+
+**Example** 
+```
+$vsProject = "C:\\somewhere\nic\my.csproj"
+$args = "/clean"
+
+$consoleLogs = Start-VisualStudioCommand -Project $vsProject `
+                                        -Arguments $args `
+                                        -Console
+```
+<details>
+   <summary>Parameters</summary>
+
+| Parameter | Description |  
+| --- | --- |
+| -Project | full path to the solution or project file to build  | 
+| -Arguments | list of argument to pass to visual studio |  
+| -Console | (switch parameter) if specified returns a list<> of the ouput from the build |
+ 
+
+</details>
+
+&nbsp;
+
+**Returns**
+<br>
+[List<>] if (-Console) is specified it returns the List<> (string) of the output 
+
+[int] if (-Console) is not spefified returns the return code of the process 
 
 ---
 
