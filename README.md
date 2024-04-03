@@ -892,7 +892,8 @@ Creates a new Excel Application and returns [ExcelApplication]
   $excelApp = New-Excel
 
   # create a new excel application and create new (default) worksheet named "worksheet1"
-  $excelApp = New Excel -Worksheet "worksheet1" 
+  # set the hilight colour and freeze the top rwo 
+  $excelApp = New Excel -Worksheet "worksheet1" -HilightColour LightGray -FreezeTopRow  
 ```
 <details>
    <summary>Parameters</summary>
@@ -900,6 +901,8 @@ Creates a new Excel Application and returns [ExcelApplication]
 | Parameter | Description |  
 | --- | --- |
 | -Worksheet | (optional) create a new worksheet |  
+| -HilightColour | (optional switch) set the system.drawing.color (named) colour for highlighted rows\columns |
+| -FreezeTopRow | (optional switch) set the top row to be frozen when the user scrools the worksheet |   
 </details>
 
 &nbsp;
@@ -979,11 +982,17 @@ Populates an excel Application worksheet (or default) with the contents of a PS 
 
 &nbsp;
 # Set-ExcelRowProperty
-Sets the row properties of a given row (and  worksheet) and returns [ExcelApplication] 
+Sets the row properties of a given row and or column returns [ExcelApplication] 
+Must be called AFTER a spreadsheet has been populated 
 
 **Example** 
 ```
-  $excelApp = New-Excel | Set-ExcelRowProperty -Row 1 -ForeColour White -BackColour Black -Freeze -Worksheet "Worksheet1"
+  
+  # bold every column in row 0 (header column)  
+  $excelApp = $app | Set-ExcelRowProperty -Row 0 -Format Bold
+
+  # highlight row 1 column 3
+  $excelApp = $app | Set-ExcelRowProperty -Row 0 -Column 3 -Format HiLight 
 ```
 <details>
    <summary>Parameters</summary>
@@ -992,9 +1001,8 @@ Sets the row properties of a given row (and  worksheet) and returns [ExcelApplic
 | --- | --- |
 | -Application | [ExcelApplication] | 
 | -Row | row number (starts at 1) |  
-| -ForeColour | (optional) The fore colour of the row | 
-| -BackColour | (optional) The backgound colour of the row |
-| -Freeze | (switchparameter) Freeze the row so it does not move during user page operations | 
+| -Column | optional column to apply yhr format to 
+| -Format | formats the row/column to one of Hilight/Bold/None
 | -Worksheet | (Optional) The names of the worksheet 
 
 </details>
@@ -1340,9 +1348,9 @@ function CreateSpreadsheet() {
    $dataAray += New-Object TestExcelData -ArgumentList "hello 1 this is a very long to see if it will expand ",123.1
    $dataAray += New-Object TestExcelData -ArgumentList "hello 2",3123123.1
 
-   $excelApp = New-Excel -Worksheet "David" `
+   $excelApp = New-Excel -Worksheet "David" -FreezeTopRow -HilightColour LightGray `
                          | Set-ExcelData -Data $dataAray -UsePropertyNameAsHeader -AutoFitColumns `
-                         | Set-ExcelRowProperty -Row 1 -ForeColour White -BackColour Black -Freeze `
+                         | Set-ExcelRowProperty -Row 0 -Format Hilight ` # highlight header row
                          | Save-excel -Filename $excelFile
 }
 
