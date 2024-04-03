@@ -9,6 +9,7 @@ PS.Utilies is a c# .NET standard 2.0 set of powershell cmdlets that wraps the fo
   <li><strong>Excel</strong> - provides wrappers to read and write Excel files using the excellent <strong>Spread sheet Light</strong> library. Usefull for allowing users to populate input data using a toolthey are used tool. 
   <li><strong>DotNet</strong> - access to dotnet cli  
   <li><strong>Visual Studio</strong> - call visual studio command line (automatically finds the latest version of VS that is installed) 
+  <li><strong>Sql</strong> - added functionality for SQLServer PS Library 
 </ol>
 
 see: [Spread sheet light](https://spreadsheetlight.com/)
@@ -56,6 +57,7 @@ Install-Module PS.Utilities
    | [Start-DotNetCommand](#start-dotnetcommand) | Runs any dotnet cli command and returns the results | DotNet 
    | [Invoke-VisualStudioBuild](#invoke-visualstudiobuild) | Builds a project or solution using visual studio (devenv) | Visual Studio |
    | [Start-VisualStudioCommand](#start-visualstudiocommand) | runs the specified visual studio command line against the given project or solution | Visual Studio | 
+   | [Resolve-SqlResult](#resolve-sqlresult) | returns a list<> or single object mapped to a typed class from the result of Invoke-Sqlcmd call | Sql
 
 
 ## Common Cmdlets
@@ -1251,6 +1253,52 @@ $consoleLogs = Start-VisualStudioCommand -Project $vsProject `
 
 ---
 
+## SQL Cmdlets
+&nbsp;
+
+# Resolve-SqlResult 
+Takes the result of a Invoke-Sqlcmd call and returns a populated (typed) object which can be a single object or an array of objects. Only the properties specified in the -ResultType are returned (case-insensitive)     
+
+**Example** 
+```
+class SqlResult {
+   [Guid]$Id
+   [string]$Name
+}
+
+$sqlconnection = "server=xxx; User Id=blah ..."
+$sql = "select * from xxx where yyy = 'asasd"
+
+$result = Invoke-Sqlcmd -ConnectionString $sqlConnection -Query $sql
+
+$resultRows = Resolve-SqlResult -Result $result -ResultType SqlResult
+
+foreach ($row in resultRows) {
+   Write-Host "$($row.Id) $($row.Name)"
+}
+ 
+
+```
+<details>
+   <summary>Parameters</summary>
+
+| Parameter | Description |  
+| --- | --- |
+| -Result | The result from the Invoke-Sqlcmd call  | 
+| -ResultType | The class type to populate with the results (single or list<>) |  
+ 
+
+</details>
+
+&nbsp;
+
+**Returns**
+<br>
+[List<>] of ResultType  
+
+[object] of ResultType 
+
+---
 
 &nbsp;
 &nbsp;
