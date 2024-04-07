@@ -10,6 +10,7 @@ PS.Utilies is a c# .NET standard 2.0 set of powershell cmdlets that wraps the fo
   <li><strong>DotNet</strong> - access to dotnet cli  
   <li><strong>Visual Studio</strong> - call visual studio command line (automatically finds the latest version of VS that is installed) 
   <li><strong>Sql</strong> - added functionality for SQLServer PS Library 
+  <li><strong>Nuget</strong> - Update nuget default profile with credentials from devops 
 </ol>
 
 see: [Spread sheet light](https://spreadsheetlight.com/)
@@ -57,12 +58,13 @@ Install-Module PS.Utilities
    | [Start-DotNetCommand](#start-dotnetcommand) | Runs any dotnet cli command and returns the results | DotNet 
    | [Invoke-VisualStudioBuild](#invoke-visualstudiobuild) | Builds a project or solution using visual studio (devenv) | Visual Studio |
    | [Start-VisualStudioCommand](#start-visualstudiocommand) | runs the specified visual studio command line against the given project or solution | Visual Studio | 
-   | [Resolve-SqlResult](#resolve-sqlresult) | returns a list<> or single object mapped to a typed class from the result of Invoke-Sqlcmd call | Sql
+   | [Resolve-SqlResult](#resolve-sqlresult) | returns a list<> or single object mapped to a typed class from the result of Invoke-Sqlcmd call | Sql |
+   | [Update-NugetConfig](#update-nugetconfig) | updates default nuget entries with credentials
 
 
 ## Common Cmdlets
 # Set-DevopsCredentials
-Sets session-wide credentials for both git and devops. You should call this as the first cmdlet in your script. The credentials will be stored for the entire PS session 
+Sets session-wide credentials for both git and devops. You should call this as the first cmdlet in your script. The credentials will be stored for the entire PS session. and is scoped for every function / cmdlet within that session.  
 
 **Example** 
 ```
@@ -1289,6 +1291,47 @@ foreach ($row in resultRows) {
 [List<>] of ResultType  
 
 [object] of ResultType 
+
+---
+
+&nbsp;
+
+# Update-NugetConfig 
+Updates the default nuget config (%appdata%\nuget\nugetconfig) with credentials from the Set-DevopsCredentials OR from parameters passed to it    
+
+**Example** 
+```
+# update from previous call to set-devopscredentials
+Update-NugetConfig 
+
+# update any nugets uri's that contain the given Organisation with username/password 
+Update-NugetConfig -Organisation xxxxxxx -Username yyyyy -PlaintextPassword zzzzzzz
+ 
+
+# update specifc uri 
+Update-NugetConfig -Url xxxxxxx -Username yyyyy -PlaintextPassword zzzzzzz 
+
+```
+<details>
+   <summary>Parameters</summary>
+
+| Parameter | Description |  
+| --- | --- |
+| -Organisation |  (optional) Azure devops organisation id | 
+| -Username | (optional) user name |  
+| -PlaintextPassword | (optional) plain text PAT token |
+| -Name | Nuget config entry by name | 
+| -Url | Nuget config entry by Url |  
+ 
+
+</details>
+
+&nbsp;
+
+**Returns**
+<br>
+[int] The return code of the operation   
+
 
 ---
 
