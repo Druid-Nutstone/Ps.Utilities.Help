@@ -70,7 +70,7 @@ Sets session-wide credentials for both git and devops. You should call this as t
 ```
 $patToken = "some-plain-text-Path-Token"
 $userName = "aperson@org.com"
-Set-DevopsCredentials -Username $userName -PlaintextPassword $patToken -Organisation "your-devops-organisation" 
+Set-DevopsCredentials -Username $userName -PlaintextPassword $patToken -Organisation "your-devops-organisation" -UseEnvironment
 
 ## to use existing credentials of a previously pulled repository you can use
 Set-DevopsCredentials -Organisation -FromRepository "C:\\somelocalRepository"
@@ -88,6 +88,7 @@ Set-DevopsCredentials -Organisation -FromRepository "C:\\somelocalRepository"
    | -PlainTextPassword | (optional if using -FromRepository) the PAT token to use to authenticate with remptes devops | 
    | -Organisation | the devops organisation name (i.e https://devop://dev.azure.com/<em>**organisation**<em>/blah) |  
    | -FromRepository | An existing repository to use (fropm the remote.url git config definition)
+   | -UseEnvironment | (Switch parameter) if specified the specified credentials will be stored in (user) environment variables. All other Fundtions that need these credentials will use the environment variable values in the first instance | 
 
 </details>
 
