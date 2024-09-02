@@ -12,8 +12,8 @@ PS.Selenium is a set of c# Cmdlets that wrap the [Selenium]([https://](https://w
    Import-Module PS.Selenium
 ```
 
-## Initialising the Selenium driver
-
+<span style="color:green;font-weight:bold;font-size:2em">New-Driver</span> 
+<br>
 this must be done _before_ you execute an element , page or test. 
 
 ```
@@ -24,9 +24,8 @@ this must be done _before_ you execute an element , page or test.
             -LogLevel Information `
             -LeaveBrowserRunning 
 ```
-### Parameters
+#### Parameters
 
----
 __-Driver__
 
 The name of the browser driver to use. This can (currently) be __Chrome__ or __Edge__
@@ -87,11 +86,11 @@ log level can be :-
 
 *The default is Information*
 
----
 
 # Single Element Processing 
 
-## Invoke-Element 
+<span style="color:green;font-weight:bold;font-size:2em">Invoke-Element</span> 
+<br>
 
 Invokes an element on a page 
 
@@ -103,3 +102,41 @@ Invokes an element on a page
    # click on first matching href
    Invoke-Element -Type Button Selector XPath -Path "//a[contains(@href,'www.selenium.dev')]" 
 ```
+#### Parameters
+
+__-Type__ (Mandatory - Enum)
+
+The type of Action on this element can be :-
+
+- Input                  
+- Button
+- Select
+- InputAndPressEnter
+- WaitForUrl
+- WaitForElement 
+- Wait
+- Url
+
+__-Selector__ 
+
+The element selector. i.e they way to find the element on the page :-
+
+- XPath
+- Name
+- CssSelector
+- ClassName
+- Id
+- TagName
+
+__-Path__ (Mandatory - string)
+
+The path of (the specified selectory) - e.q -Path "\\\\input(@id, 'someid')"
+
+__-Value__ (string)
+
+The value to enter (typically for a input/textarea)
+
+__-TakeImage__
+
+Take an image *after* this element has been processed 
+ 
