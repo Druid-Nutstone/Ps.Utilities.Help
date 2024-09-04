@@ -159,6 +159,7 @@ These examples can be run. Copy and paste them to you PWSH editor of choice to R
    | Cmdlet | Description | 
    | --- | --- | 
    | [New-Driver](#new-driver) | Creates the selenium session 
+   | [Close-Browser](#close-browser) | Closes a broser instance and any driver instances
    | [Invoke-Element](#invoke-element) | Interacts with an element 
    | [Find-Element](#find-element) | Locates an element in the current page 
    | [New-ElementCollection](#new-elementcollection) | creates a new collection of elements
@@ -167,6 +168,15 @@ These examples can be run. Copy and paste them to you PWSH editor of choice to R
    | [Import-Elements](#import-elements) | Imports (into memory) a collection of elements from a file 
    | [New-Test](#new-test) | creates a new test  
    | [Add-Page](#add-page) | Adds an existing element collection (page) to an existing test 
+   | [Invoke-Test](#invoke-test) | Executes a test 
+   | [Set-Element](#set-element) | updates the properties of an element within a specific page 
+   | [Get-Table](#get-table) | Retrieves an object definition of a table element
+   | [Get-TableColumn](#get-tablecolumn) | gets a specifc row and column of a table element
+   | [Invoke-WebElement](#invoke-webelement) | Executes an action directly against an element (withoiut selector) 
+   | [Get-Logs](#get-logs) | Retrieves the LogModelCollection logs 
+   | [Save-Log](#save-log) | Saves the log to a file
+   | [Get-ScreenShot](#get-screenshot) | Returns a screen shot as a bytestream of as base64
+   | [Save-ScreenShot](#Save-ScreenShot) | 
 
 
 &nbsp;
@@ -242,6 +252,17 @@ log level can be :-
 __-BrowserStartupOptions__ (optional string[])
 
 string[] list of optional parameters to pass to the browser driver (e.g --disable-gpu)
+
+___
+
+# Close-Browser
+
+Closes the instance of the browser and any associated drvier instances.
+If the **-Fullscreen** driver option is set - the browser will be closed **automatically**  
+
+```
+    Close-Browser
+```
 
 ___
 
@@ -504,5 +525,291 @@ ___
 
 Adds an existing element collection (page) to an existing Test. 
 
+```
+    Add-Page -Test $test -Name $pageName -Script {
+      param($page) # elemencollection object 
+      switch ($page.Name) {
+         "logon" {
+            Set-Element -Name "Password" -PageObject $page -Value $variableFromSecuresource 
+         } 
+      }
+    }
+```
+
 #### Parameters
 
+__-Test__ (required - TestModel object - From pipeline) 
+
+The TestModel object. can be piped from new-test (new-test -Name | Add-Page -Name $pagename) 
+
+__-Name__ (optional-string)
+
+The name of the page (will be retrieved from storage)
+
+__-Page__ (optional - ElementCollection object)
+
+The elementcollection object 
+
+__-Path__ (optional - string)
+
+The file containing the saved elementcollection - if specified is loaded into storage first 
+
+___
+
+&nbsp;
+# Invoke-Test
+
+Executes a pre-defined test 
+
+### Parameters 
+
+__-Name__ (required - string)
+
+the name of the test. this is retrieved from storage 
+
+__-OnBeforePage__ (optional - ScriptBlock) 
+
+Executes the provided powershell ScriptBlock passing the 'current' elementcollection object (page).
+this is usefull if you want to populate the page element values that are specific to an environment or if they are sensitive and need to be retrieved at run time 
+
+___
+
+&nbsp;
+# Set-Element
+
+Updates the properties of a specifc (named) element within a page. 
+
+```
+    Set-Element -Page "somePage" -Name "nameofproperty" -Value "updated value"  
+```
+
+### Parameters
+
+__-Page__ (optional - string) 
+
+The Name of the page that contains the property - this is retrived from storage
+
+__-PageObject__ (optional - ElementCollection)
+
+The ElementCollection object (page) to update
+
+__-Name__ (required - string)
+
+The name of the property to update
+
+__-Value__ (optional - string) 
+
+The value of the property to update
+
+__-Path__ (optional - string)
+
+The selector {XPath, css etc} path to update 
+
+____
+
+&nbsp;
+# Get-Table
+
+Returns a TableModel object which is a class represtation of a table and it's contents. You can then call
+other cmdlets to interact with that table 
+
+```
+     $table = Get-Table -Selector XPath -Path "//table[@id='']" -Script {
+      param($table)
+      # do something with the table here 
+     }
+     Write-Host $table[0].Element # the IWebElement of table row 0   
+```
+
+### Parameters
+
+__-Selector__ (required - ElementIdentifier enum)
+
+- XPath
+- Name
+- CssSelector
+- ClassName
+- Id
+- TagName
+
+__-Path__ (required - string)
+
+The path of the selector 
+
+__-Script__ (optional - ScriptBlock)
+
+Script to execute. the function will get passed the TableModel object of the table (see example) 
+
+___
+
+&nbsp;
+# Get-TableColumn
+
+Returns the **IWebElement** associated with a particular row and column of a table
+
+```
+    Get-TableColumn -Row 1 -Column 4 -Selector XPath -Path "./input" | 
+```
+
+### Parameters
+
+__-Table__ (reqired - TableModel - value from pipeline)
+
+The TableModel of the table to act upon
+
+__-Row__ (required - int)
+
+The row index of the table **(ZERO BASED)**
+
+__-Column__ (required - int) 
+
+The column index of the row **(ZERO BASED)
+
+__-Selector__ (required - ElementIdentifier - enum) 
+
+The selector type of the COLUMN that you want to interact with. So a table TD element
+can have multiple child nodes so it needs to knoe where in the child chain the webelement is 
+
+__-Path__ (required - string)
+
+The Path of the selector that points to the actual element you want inside the column TD element.
+so using an XPath selector it might be "./div/span/input" (maybe). The './' signifies that this path is relative to the column TD  
+
+___
+
+&nbsp;
+# Invoke-WebElement 
+
+Invokes an action against a previoulsy retrieved IWebElement. 
+
+```
+    # get an element 
+    Find-Element -Selector XPath -Path "//input...." -Script {
+      param($webElement)
+      $obj = $webElement | Invoke-WebElement -Type Input -Value "setinputval" 
+    }
+```
+
+### Parameters 
+
+__-Element__ (required - IWebElement - value from pipeline)
+
+The IWebElement.
+
+__-Type__ (required - ElementType)
+
+
+- Input                  
+- Button
+- Select
+
+__-Value__ (optional - string)
+
+The value associated with the IWebElement
+
+__-WaitSeconds__ (optional - int)
+
+Wait x seconds before actioning 
+
+__Script__ (optional - ScriptBlock)
+
+Script block that will get executed After the action on the IWebElement. 
+The script will be passed (IWebElement) as a parameter 
+
+___
+
+&nbsp;
+# Get-Logs
+
+Retrieves the LogModelCollection of the logs 
+
+```
+    $logCollection = Get-Logs 
+    foreach (var $log in $logCollection) {
+      Write-Host "$($log.Created) $($log.LogLevel) $($Message)"
+    }
+```
+
+### No Parameters
+
+___
+
+# Save-Log 
+
+Saves the logs to a file in either txt or json format 
+
+### Parameters 
+
+__-Path__ (required - string)
+
+The **DIRECTORY** path (Not including the filename) where the logs will be saved 
+
+__-Type__ (LogOutputType - enum)
+
+The type of output :- 
+
+- Json
+- Text
+
+__Name__ (optional - string)
+
+The file name of the log file - by default this will be $"SeleniumLog{DateTime.Now.ToString("yyyyMMdd")}".type
+
+___
+
+&nbsp;
+# Get-ScreenShot 
+
+Returns a screen shot as either a bytestream or base64. When a screen shot is taken (-TakeImage) it is stored in storage until required
+
+```
+    $forEmail = Get-Screenshot -ScreenShotType -Error -ImageType Base64  
+```
+
+### Parameters
+
+__-ScreenShotType__ (optional - enum)
+
+The type of screen shot to retrieve 
+
+- All (default)
+- Error
+- User
+
+__-ImageType__ (optional - enum)
+
+The type of image to returns 
+
+- ByteStream (default)
+- Base64 
+
+**Returns**
+
+either a bytestream ot base64 string
+
+___
+
+&nbsp;
+# Save-ScreenShot 
+
+Saves one or more screenshots to a specified directory 
+
+```
+   Save-ScreenShot -Name "screen1" -Path "C:\temp\selenium\screens"  
+```
+
+### Parameters 
+
+__-Path__ (required - string)
+
+The **DIRECTORY** where to save the screenshot - if the directory does not exist it will be created
+
+__-ScreenShotType__ (optional)
+
+If specified **ALL** screen shots of the type requested will be saved to the specified path.
+
+__-Name__ (optional string)
+
+The name of the screen shot to save. This will have been set via the -TakeImage or -Type name properties of an element
+
+___
