@@ -154,6 +154,22 @@ These examples can be run. Copy and paste them to you PWSH editor of choice to R
    Close-Browser 
 ```
 
+&nbsp;
+## Cmdlet Summary
+   | Cmdlet | Description | 
+   | --- | --- | 
+   | [New-Driver](#new-driver) | Creates the selenium session 
+   | [Invoke-Element](#invoke-element) | Interacts with an element 
+   | [Find-Element](#find-element) | Locates an element in the current page 
+   | [New-ElementCollection](#new-elementcollection) | creates a new collection of elements
+   | [Add-Element](#add-element) | Adds an element definition to an element collection
+   | [Save-Elements](#save-elements) | Saves a collection of elements to a file
+   | [Import-Elements](#import-elements) | Imports (into memory) a collection of elements from a file 
+   | [New-Test](#new-test) | creates a new test  
+   | [Add-Page](#add-page) | Adds an existing element collection (page) to an existing test 
+
+
+&nbsp;
 # CMDLETS
 
 # New-Driver 
@@ -341,6 +357,7 @@ executes the given script element *after* the element has been proecessed. the S
 ```
 ___
 
+&nbsp;
 # New-ElementCollection
 
 Creates a new collection of elements in storage (a page)
@@ -392,6 +409,17 @@ The type of the element
 - Id
 - Image
 
+__-Selector__ (optional - but in most cases required)
+
+The selector to use when finding the element
+
+- XPath
+- Name
+- CssSelector
+- ClassName
+- Id
+- TagName
+
 __-Name__
 
 A unique name to assign to this element 
@@ -403,4 +431,78 @@ A string value to update an element with
 __-Path__
 
 The path of (the specified selectory) - e.q -Path "\\\\input(@id, 'someid')"
+
+__-TakeImage__ (optional string)
+
+Takes an image of the current page. Can be retrieved later with Get-ScreenShot 
+
+__-WaitSeconds__ (optional int)
+
+Waits for the specified number of seconds before executing the action on the element
+
+__-Optional__ (switch)
+
+if specified tells PS.Selenium NOT to throw an error if the element does not exist
+
+
 ___
+&nbsp;
+# Save-Elements
+
+Saves an element collection to a file
+
+```
+    Save-Elements -Elements $elementCollection -Path "Somewhere.json"
+```
+
+#### Parameters
+
+__-Elements__ (required)
+
+ElementCollection object 
+
+__-Path__ (required)
+
+Full path to the file location where the elementcollection should be saved
+___
+
+&nbsp;
+# Import-Elements
+
+Imports a collection of elements from a file and adds it to the current storage
+
+```
+   Import-Elements -Path "pathTojsonfile.json"
+```
+#### Parameters
+
+__Path__ (required)
+
+The full path to the file containing the elements to load 
+
+___
+
+&nbsp;
+# New-Test
+
+Creates a new test 
+
+```
+   New-Test -Name "Test01"
+```
+
+#### Parameters
+
+__-Name__ (required - string)
+
+The Name of the test
+
+___
+
+&nbsp;
+# Add-Page 
+
+Adds an existing element collection (page) to an existing Test. 
+
+#### Parameters
+
