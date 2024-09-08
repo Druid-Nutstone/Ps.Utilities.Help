@@ -146,10 +146,17 @@ These examples can be run. Copy and paste them to you PWSH editor of choice to R
       }
    }                    
 
-   # todo - do something with the results
-   foreach ($result in $testResults.PageResults) {
-      Write-Host ($result.Result | Format-List | Out-String)
-   }
+   # create report directory
+   $reportPath = Join-Path -Path $testPath -ChildPath "Reports"
+
+   # create the reports (html)
+   $report = $testResults | New-Report -Path $reportPath -Zip
+
+   # it was zipped up as well 
+   Write-Host "Ziped report at $($report.ZipFile)"
+
+   # open it in the browser 
+   $report | Open-Report 
 
    Close-Browser 
 ```
@@ -177,6 +184,8 @@ These examples can be run. Copy and paste them to you PWSH editor of choice to R
    | [Save-Log](#save-log) | Saves the log to a file
    | [Get-ScreenShot](#get-screenshot) | Returns a screen shot as a bytestream of as base64
    | [Save-ScreenShot](#Save-ScreenShot) | 
+   | [New-Report](#new-report) | Creates an html report of a test run 
+   | [Open-Report](#open-report) | Opens the index html report file in a browser
 
 
 &nbsp;
@@ -811,5 +820,56 @@ If specified **ALL** screen shots of the type requested will be saved to the spe
 __-Name__ (optional string)
 
 The name of the screen shot to save. This will have been set via the -TakeImage or -Type name properties of an element
+
+___
+
+&nbsp;
+# New-Report 
+
+Creates an html report of a test run including the pagestats , logs and images
+
+```
+ $report = $testResults | New-Report -Path $reportPath -Zip
+ Write-Host $report.HtmlIndexFile
+ Write-Host $report.HtmlLogFile
+ Write-Host $report.ZipFile  
+
+```
+
+### Parameters
+
+__-TestResults__ (required - TestResultsModel object)
+
+The TestResultsModel that cones back from an Invoke-Test cmdlet
+
+__-Path__ (required)
+
+The local folder path to create the required html reports, images and logs. If the path exists it is deleted and re-created 
+
+__-Zip__ (optional)
+
+Optionally creates a ZIP archive of the files created by the report 
+
+### Returns 
+
+A ReportingServiceTestReport object.
+
+___
+
+&nbsp;
+# Open-Report 
+
+Opens a report created by New-Report in a browser 
+
+```
+   $report | Open-Report 
+```
+
+### Parameters
+
+__-Report__ (required - ReportingServiceTestReport object )
+
+The ReportingServiceTestReport object thet is returned fron a New-Report Cmdlet
+Can come from the pipeine
 
 ___
