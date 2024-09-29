@@ -127,6 +127,14 @@ These examples can be run. Copy and paste them to you PWSH editor of choice to R
    # Add-Page can add a page to the test from an element colletion (-Page) , from storage (-Name) or from a file (-Path)  
    $test1 = New-Test -Name "PageTests" | Add-Page -Name "Page1" | Add-Page -Name "Page2"
 
+   # get the content of a response
+   Get-Network -Url "selenium.infinityfreeapp.com/?i=1" -NetworkType Response -Script {
+       param($responseBody, $url, $statusCode)
+       Write-Host "Full Url $($url)"
+       Write-Host "Response Code $($statusCode)"
+       Write-Host $responseBody.SubString(0, 50)
+   }
+
 
    # startup the driver 
    $driver = New-Driver -Driver Chrome `
