@@ -420,10 +420,15 @@ Gets the content (string) of https requests and responses. You __Must__ set the 
 
 ```
     Get-Network -Url "somefullorpartialurl" -NetworkType Request -Script {
-      param($requestBody)
+      param($requestBody, $url)
       # do something with the requestbody
     }
-```
+
+    Get-Network -Url "someresponseurl" -NetworkType Response -Script {
+      param($responseBody, $url, $statusCode)
+      # do something
+    }
+ ```
 
 #### Parameters
 
