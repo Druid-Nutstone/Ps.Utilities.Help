@@ -170,6 +170,7 @@ These examples can be run. Copy and paste them to you PWSH editor of choice to R
    | [Invoke-Element](#invoke-element) | Interacts with an element 
    | [Find-Element](#find-element) | Locates an element in the current page 
    | [New-ElementCollection](#new-elementcollection) | creates a new collection of elements
+   | [Get-Network](#get-network) | Retrieves the content of http requests and responses
    | [Add-Element](#add-element) | Adds an element definition to an element collection
    | [Save-Elements](#save-elements) | Saves a collection of elements to a file
    | [Import-Elements](#import-elements) | Imports (into memory) a collection of elements from a file 
@@ -201,6 +202,7 @@ will be automatically downloaded. If there is no internet connection - or there 
             -MaxRetries 5 `
             -Fullscreen ` 
             -LogLevel Information `
+            -LogNetwork `
             -LeaveBrowserRunning 
 ```
 #### Parameters
@@ -257,6 +259,10 @@ log level can be :-
 - Debug
 
 *The default is Information*
+
+__-LogNetwork__ (switch parameter)
+
+if specified http traffic invoked by the browser will be monitored (get, post etc) and added to the logs. To interogate *get* and *post* data for both incomming and outgoing requests you can use the __Get-Network__ cmdlet..  
 
 __-BrowserStartupOptions__ (optional string[])
 
@@ -405,6 +411,36 @@ The name of the page that contains the elements
 __Returns__
 
 ElementCollection object 
+
+___
+
+# Get-Network 
+
+Gets the content (string) of https requests and responses. You __Must__ set the -LogNetwork switch parameter in the New-Driver cmdlet otherwise network traffic will not be monitored 
+
+```
+    Get-Network -Url "somefullorpartialurl" -NetworkType Request -Script {
+      param($requestBody)
+      # do something with the requestbody
+    }
+```
+
+#### Parameters
+
+__-Url__ (string)
+
+Full or partial url of the request/response
+
+__-NetworkType__ (enum)
+
+The request type can be 
+
+- Request
+- Response
+
+__-Script__ (ScriptBlock)
+
+PS code to execute. the request/response body as a string
 
 ___
 
