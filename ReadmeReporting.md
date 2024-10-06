@@ -300,7 +300,7 @@ __-WorkSheet__ (optional - [string])
 
 The name of a single worksheet.
 
-__-WorkSheeta__ (optional - [string[]])
+__-WorkSheets__ (optional - [string[]])
 
 A string array of worksheet names to apply the properties to,.
 
