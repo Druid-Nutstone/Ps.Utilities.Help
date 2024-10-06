@@ -116,6 +116,7 @@ Open-Excel -Path $testPath
    | [Add-ExcelRow](#add-excelrow) | Add a row to the specified or current worksheet 
    | [Add-ExcelColumn](#add-excelcolumn) | Add a column to the specified or current worksheet row
    | [Add-WorkSheet](#add-worksheet) | Add's a new worksheet the the excel application   
+   | [Set-WorkSheet](#set-worksheet) | Sets the properties of the specified worksheet     
 
 # New-Excel
 Creates a new excel (openxml) application and returns a pointer to it.
@@ -275,6 +276,41 @@ __-Application__ (required - from pipeline)
 The instance of the excel application
 
 __-WorkSheet__ (required)
+
+The name of the worksheet
+
+### Returns
+
+a Type of ExcelAppliation
+
+# Set-WorkSheet
+Set's specific properties to the specified worksheet (or worksheets)
+
+```
+  $excelApp | Set-Worheet -WorkSheet "Worksheet1" -AutoFit -FreezeTopRow
+```
+
+### Parameters
+
+__-Application__ (required - from pipeline)
+
+The instance of the excel application
+
+__-WorkSheet__ (optional - [string])
+
+The name of a single worksheet.
+
+__-WorkSheeta__ (optional - [string[]])
+
+A string array of worksheet names to apply the properties to,.
+
+__-AutoFit__ (optional SwitchParameter)
+
+If specified attempts to 'fit' the columns to the maximum width of a column/row
+
+__-FreezeTopRow__ (ootional SwitchParameter)
+
+If specified freezes the top row so that it soes not move when the user scrools the worksheet
 
 ### Returns
 
