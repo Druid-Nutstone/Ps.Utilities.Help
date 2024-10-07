@@ -157,13 +157,16 @@ These examples can be run. Copy and paste them to you PWSH editor of choice to R
    # create report directory
    $reportPath = Join-Path -Path $testPath -ChildPath "Reports"
 
-   # create the reports (html)
-   $report = $testResults | New-Report -Path $reportPath -Zip
+   # create the reports excel (opemxml format) (can also be Html)
+   # can have -Base64
+   # or -Zip
+   $report = $testResults | New-Report -Path $reportPath -ReportType Excel
 
-   # it was zipped up as well 
+   # report response   
    Write-Host "Ziped report at $($report.ZipFile)"
+   Write-Host "Report $($report.ReportFile)
 
-   # open it in the browser 
+   # open it in the associated app (excel, browser) 
    $report | Open-Report 
 
    Close-Browser 
