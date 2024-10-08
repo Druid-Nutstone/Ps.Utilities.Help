@@ -207,6 +207,67 @@ These examples can be run. Copy and paste them to you PWSH editor of choice to R
    | [Add-Log](#add-log) | Adds a log entry to the logs 
    | [Wait-Network](#wait-network) | Waits for all [Get-Network](#get-network) requests to complete
 
+## Assertions
+
+## Assert-Element 
+
+The Assert-Element can be used within a ScriptBlock or idependantly. either from Invoke-Element or as part of a test (Add-Element) or as part of a Find-Element ScriptBlock
+
+## From Invoke-Element 
+
+```
+  Invoke-Element -Type Input -Selector XPath -Path "//input[@id='xxxx']" -Value "Is" -Script {
+      param($webElement)
+      $webElement | Assert-Element -ErrorAction Stop -AssertionType IsNotEmpty 
+      $webElement | Assert-Element -ErrorAction Stop -AssertionType IsEqualTo -Value "Is"
+      ... etc
+}     
+```
+
+## From Add-Element 
+
+```    
+    New-ElementCollection -Page "Page1" | `
+        Add-Element -Type Url -Name "Page1Url" -Path "https://selenium.infinityfreeapp.com/" | `
+        Add-Element -Type WaitForUrl -Name "Page1WaitForUrl" -Path "?i=1" | `
+        Add-Element -Type Input -Name "TestInput" -Selector XPath -Path "//input[@id='formGroupExampleInput']" -Value "Input 1" -Script {
+         param($webElement)
+         $webElement | Asset-Element -ErrorAction Stop -AssertionType IsNotEmpty
+        } | `
+        Save-Elements -Path $page1Path # optional - (see import-elements)
+
+ ...
+
+$test1 = New-Test -Name "PageTests" | Add-Page -Name "Page1" 
+ ... 
+
+ # assertion will get called .. 
+ $testResults = Invoke-Test -Name "PageTests" 
+                  
+    
+```
+#### Parameters
+
+__-Element__ (required from pipeline) (IwebElement)
+
+the IWebElement to do the assertion against 
+
+__-Value__ (optional) 
+
+An Object to compare against (the type will be examined and used for comparison)
+
+__-AssertionType__ (required) (enum of AssertionType)
+
+- Contains
+- IsGreaterThan
+- IslessThan 
+- IsEqualTo
+- IsChecked 
+- IsVisible
+- IsNotEmpty
+
+___
+
 
 &nbsp;
 # CMDLETS
