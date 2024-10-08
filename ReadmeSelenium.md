@@ -231,7 +231,7 @@ __-DriverPath__ (optional)
 
 The full path of the drvier required for the selected browser. Use this if there is no internet connection 
 
-__-LogPath__ (optional)
+__-LogPath__ (optional) __THIS IS OBSOLETE FROM VERSION 1.37__  
 
 The path (and name) where logs should be written - use Save-Logs to define at run time.    
 
