@@ -154,6 +154,9 @@ These examples can be run. Copy and paste them to you PWSH editor of choice to R
       }
    }                    
 
+   # wait for any network requests to be processed 
+   Wait-Network -Verbose
+
    # create report directory
    $reportPath = Join-Path -Path $testPath -ChildPath "Reports"
 
@@ -199,8 +202,10 @@ These examples can be run. Copy and paste them to you PWSH editor of choice to R
    | [Save-Log](#save-log) | Saves the log to a file
    | [Get-ScreenShot](#get-screenshot) | Returns a screen shot as a bytestream of as base64
    | [Save-ScreenShot](#Save-ScreenShot) | 
-   | [New-Report](#new-report) | Creates an html report of a test run 
+   | [New-Report](#new-report) | Creates a report of a test run (html/excel)
    | [Open-Report](#open-report) | Opens the index html report file in a browser
+   | [Add-Log](#add-log) | Adds a log entry to the logs 
+   | [Wait-Network](#wait-network) | Waits for all [Get-Network](#get-network) requests to complete
 
 
 &nbsp;
@@ -313,7 +318,8 @@ __-Type__ (Mandatory - Enum)
 
 The type of Action on this element can be :-
 
-- Input                  
+- Input 
+- Password (same as input but log values are obsfucated)                 
 - Button
 - Select
 - InputAndPressEnter
@@ -570,7 +576,8 @@ __-Type__ (required - enum)
 
 The type of the element 
 
-- Input                  
+- Input  
+- Password (same as input but logs are obsfucated)                
 - Button
 - Select
 - InputAndPressEnter
@@ -1015,3 +1022,51 @@ The ReportingServiceTestReport object thet is returned fron a New-Report Cmdlet
 Can come from the pipeine
 
 ___
+
+&nbsp;
+# Add-Log 
+
+Adds a log entry 
+
+```
+   Add-Log -LogLevel Information -Log "Log entry 1"
+
+   Add-Log -LogLevel Exception -Log "Some Error" -Stop
+```
+
+### Parameters
+
+__-LoggingLevel__ (required {default information})
+
+- Information
+- Warning
+- Error
+- Debug
+- Exception
+
+__-Log__ (string)
+
+The log text to add 
+
+__-Stop__ (optional - only for exception)
+
+Will throw a terminating error 
+
+___
+
+&nbsp;
+# Wait-Network 
+
+Waits for all Get-Network Requests to have been processed. This is a *blocking* call so you should only use it if there are Get-Network requests
+
+This ensures that any logs written will include any script logging from Get-Network 
+
+```
+   Add-Log -LogLevel Information -Log "Log entry 1"
+
+   Add-Log -LogLevel Exception -Log "Some Error" -Stop
+```
+
+### Parameters
+
+None
