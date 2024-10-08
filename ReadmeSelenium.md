@@ -182,6 +182,9 @@ These examples can be run. Copy and paste them to you PWSH editor of choice to R
    | [Find-Element](#find-element) | Locates an element in the current page 
    | [New-ElementCollection](#new-elementcollection) | creates a new collection of elements
    | [Get-Network](#get-network) | Retrieves the content of http requests and responses
+   | [Get-NetworkRequestHeader](#get-networkrequestheader) | Retrieves a specific header from a network request
+   | [Get-NetworkResponseHeader](#get-networkresponseheader) | Retrieves a specific header from a network response   
+   | [Get-NetworkResponsePayload](#get-networkresponsepayload) | Retrieves the payload from a network reponse into a type or string      
    | [Add-Element](#add-element) | Adds an element definition to an element collection
    | [Save-Elements](#save-elements) | Saves a collection of elements to a file
    | [Import-Elements](#import-elements) | Imports (into memory) a collection of elements from a file 
@@ -464,6 +467,86 @@ PS code to execute. the request/response body as a string
 
 for request NetworkRequestSentEventArgs
 for response NetworkResponseReceivedEventArgs 
+
+# Get-NetworkRequestHeader
+
+Gets a specfic header from a network request 
+
+```
+    Get-Network -Url "somefullorpartialurl" -NetworkType Request -Script {
+      param($request)
+      $corro = $request | Get-NetworkRequestHeader -Name "x-corro"
+      Write-Host "Got corro $($corro)"
+    }
+```
+
+### parameters 
+
+__-Response__ ([NetworkRequestSentEventArgs] - required -from pipeline)
+
+The NetworkRequestSentEventArgs object from a Get-Network function
+
+__-Name__ ([string] - required)
+
+Name of the header to retrieve
+
+___
+
+# Get-NetworkResponseHeader
+
+Gets a specfic header from a network response 
+
+```
+    Get-Network -Url "somefullorpartialurl" -NetworkType Response -Script {
+      param($response)
+      $corro = $response | Get-NetworkResponseHeader -Name "x-corro"
+      Write-Host "Got corro $($corro)"
+    }
+```
+
+### parameters 
+
+__-Response__ ([NetworkResponseReceivedEventArgs] - required -from pipeline)
+
+The NetworkResponseReceivedEventArgs object from a Get-Network function
+
+__-Name__ ([string] - required)
+
+Name of the header to retrieve
+
+___
+
+# Get-NetworkResponsePayload
+
+Gets the response from a network call. if json it will be deserialised into the required type 
+
+```
+    Class Person {
+      [string]$title
+      [string]$foreName
+    } 
+    
+    Get-Network -Url "somefullorpartialurl" -NetworkType Response -Script {
+      param($response)
+      $person = $response | Get-NetworkResponsePayload -Type Person -PatloadType Json
+      Write-Host "Person name $($person.foreName)"
+    }
+```
+
+### parameters 
+
+__-Response__ ([NetworkResponseReceivedEventArgs] - required -from pipeline)
+
+The NetworkResponseReceivedEventArgs object from a Get-Network function
+
+__-Type__ ([type] - optional is Json Specified )
+
+Type of deserialised object to returned
+
+__-PayloadType__ (required payload type enum)
+
+- String
+- Json
 
 ___
 
