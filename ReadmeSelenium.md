@@ -431,12 +431,12 @@ Gets the content (string) of https requests and responses. You __Must__ set the 
 
 ```
     Get-Network -Url "somefullorpartialurl" -NetworkType Request -Script {
-      param($requestBody, $url)
+      param($request)
       # do something with the requestbody
     }
 
     Get-Network -Url "someresponseurl" -NetworkType Response -Script {
-      param($responseBody, $url, $statusCode)
+      param($response)
       # do something
     }
  ```
@@ -457,6 +457,13 @@ The request type can be
 __-Script__ (ScriptBlock)
 
 PS code to execute. the request/response body as a string
+
+### Returns
+
+(see selenium Hub for definition)
+
+for request NetworkRequestSentEventArgs
+for response NetworkResponseReceivedEventArgs 
 
 ___
 
