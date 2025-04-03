@@ -30,6 +30,7 @@ It also only supports Powershell 7.50 (and above) and a windows X64 client.
    | [New-SemanticTag](#new-semantictag) | Creates a semantic version tag (using standard notation vx.x.x)      
    | [Invoke-Commit](#invoke-commit) | Commits local changes (optionally with a tag)    
    | [Invoke-Push](#invoke-push) | Pushes the current local repo changes to the remote      
+   | [Invoke-Pull](#invoke-pull) | Pulls the latest of a repo/branch      
    | [New-PullRequest](#new-pullrequest) | Creates a new pull request for the current remote repository  
    | [Get-PullRequests](#get-pullrequests) | Retrieves open or all pull remote requests      
    | [Merge-PullRequest](#merge-pullrequest) | Merges a previously created pull request into the target branch (usually origin)  
@@ -292,6 +293,31 @@ The __Root__ directory where the cloned repo will be written to.
 __-Repository__ (optional)
 
 the __Remote__ repository name
+
+&nbsp 
+
+# Invoke-Pull
+
+invokes a pull against the current or specified repository and branch.
+If there are otstanding commits an error will be thrown.
+
+```
+Invoke-Pull -Branch "SomeBranch"
+```
+
+### Parameters 
+
+__Repository__ (optional) 
+
+The local repository name 
+
+__Path__ (optional)
+
+The local root directory of the repository 
+
+__Branch__ (optional)
+
+The branch to pull against (it will be checkout first)
 
 &nbsp;
 
