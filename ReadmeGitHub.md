@@ -1,9 +1,14 @@
 # PS.Git
-PS.Git is a set of C# cmdlets that use the Lib2GitSharp library and Github API (native) to provide a single set of cmdlets to manipulate both local and remote gitbug repositories.
+PS.Git is a set of C# cmdlets that use the Lib2GitSharp library and Github API (native) to provide a single set of cmdlets to manipulate both local and remote github repositories.
 
 it does __NOT__ rely on external Git ot Github cli's.
 
-Currently it only supports GitHub PAT tokens to authenticate actions that require authentication.
+### Authentication 
+Currently it only supports GitHub PAT tokens to authenticate actions that require authentication. 
+it does , however , implement Get-Token -Script { your stuff } so that you can implement Oauth 
+or your own mechanism to get a PAT token   
+
+## Pre-requisites 
 
 It also only supports Powershell 7.50 (and above) and a windows X64 client.
 
@@ -36,10 +41,15 @@ It also only supports Powershell 7.50 (and above) and a windows X64 client.
 
 # Get-GitToken 
 
-Entry point for createing a git token. if the environment variable GitToken is set for the user , it will just return that. Otheriwse it will execute the script defined by the __-Script__ parameter. the script defined __Must__ return a single string that is a valid git token.
+Entry point for creating a git token. if the environment variable __GitToken__ 
+is set for the user , it will just return that. 
+Otheriwse it will execute the script defined by the __-Script__ parameter. 
+The script defined __Must__ return a single string that is a valid git token. 
+That token will then be stored in the user __GitToken__ user envrionment variable 
 
 ```
     $gitToken = Get-GitToken -Script {
+      return my_way_of_getting_a_token
       # do something that returns a valid token
     }
 ```
@@ -50,15 +60,21 @@ __-Script__
 
 A scriptBlock that returns a [string] representation of a valid GitHub Token.
 
-Inline script (or local function) that returns 
-
 &nbsp;
 
 # New-GitConnection 
 
-Used by all other cmdlets and mst be the first cmdlet called in a PS session. The connection object it creates is stored in a memorycache object and is available to all cmdlets within the PS session. It can be altered by other cmdlets during the session or altered directly using the __Set-GitConnection__ cmdlet.    
+Used by all other cmdlets and must be the first cmdlet called in a PS session. 
+before another direct git cmdlet is called. 
 
-The minium parameters you should set are __-Origranisation__ or __-User__ and __-Token__ if the environment variable  __GitToken__ is not set  
+The connection object it creates is stored in a memorycache object 
+and is available to all cmdlets within the PS session. 
+It can be altered by other cmdlets during the session or altered directly 
+using the __Set-GitConnection__ cmdlet.    
+
+The minium parameters you should set are __-Origranisation__ or __-User__ 
+and __-Token__ if the environment variable  __GitToken__ is not set 
+and you are manipulating remote repositories  
 
 ```
  New-GitConnection -Organisation "myOrganisation" `
