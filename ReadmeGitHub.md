@@ -31,6 +31,7 @@ i.e $VerbosePreference = "Continue"
    | [Get-GitToken](#get-gittoken) | Sets the git token based on a script function. This is a hookfor you to implement your own token processing (Oauth , internal token processing).     
    | [New-GitConnection](#new-gitconnection) | This __Must__ be the first cmdlet called. (apart from __Get-GitToken__) it initiates a git connection (both local and remote) and is used by __ALL__ other cmdlets  
    | [Set-GitConnection](#set-gitconnection) | Sets any of the parameters for a git connection (see __New-GitConnection__) for parameter list 
+   | [Get-Repositories](#get-repositories) | Retrieves a list of repositories for the given user or organisation. With an optional Script filter to return a filtered list 
    | [Invoke-Clone](#invoke-clone) | Clones a remote repository locally parameter list 
    | [New-Branch](#new-branch) | Creates (or checks out) a local branch   
    | [Get-Branches](#get-branches) | Retrieves a list of local branches with an optional Script filter      
@@ -141,6 +142,44 @@ Any valid email address to be used for commits and tags.
 __-TesConnection__ (switch)
 
 Tests the organisation/user remote repository to see if it is valid (New-GitConnection only)
+
+&nbsp;
+
+# Set-GitConnection
+
+Sets individual or multiple properties of the git connection 
+
+```
+   Set-GitConnection -Token "xxx" 
+```
+
+### Parameters
+
+All parameters are the same as __New-GitConnection__
+
+&nbsp;
+
+# Get-Repositories 
+
+Returns a list of repositories for the given user or organisation.
+With an optional __-Script__ parameter that is a user-defined powershell script 
+that can filter the returned object (GitRepositoryListCollection)
+
+```
+Get-Repositories -Script {
+    param(
+        [GitHub.Service.Models.GitRepositoryListCollection]$Repositories
+    )
+    return $Repositories | Where-Object { $_.Name -match "ps." }
+}
+```
+
+### Parameters
+
+__-Script__
+
+A user defined powershell script that returns a filtered list of repositories 
+(or anything else).  
 
 &nbsp;
 
