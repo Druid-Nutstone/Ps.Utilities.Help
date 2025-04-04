@@ -12,6 +12,13 @@ or your own mechanism to get a PAT token
 
 It also only supports Powershell 7.50 (and above) and a windows X64 client.
 
+## Debugging 
+
+If you want more debugging for any action you can use the -Verbose parameter on any cmdlet 
+Or to set the __Global__ verbose variable 
+
+i.e $VerbosePreference = "Continue"
+
 ## Using PS.Selenium 
 ```
    Install-Module PS.Git
