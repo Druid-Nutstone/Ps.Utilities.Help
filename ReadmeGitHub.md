@@ -33,7 +33,7 @@ i.e $VerbosePreference = "Continue"
    | [Set-GitConnection](#set-gitconnection) | Sets any of the parameters for a git connection (see __New-GitConnection__) for parameter list 
    | [Invoke-Clone](#invoke-clone) | Clones a remote repository locally parameter list 
    | [New-Branch](#new-branch) | Creates (or checks out) a local branch   
-   | [Get-Tags](#get-tags) | Retrieves a collection of tags from the local repository      
+   | [Get-Branches](#get-branches) | Retrieves a list of local branches with an optional Script filter      
    | [New-SemanticTag](#new-semantictag) | Creates a semantic version tag (using standard notation vx.x.x)      
    | [Invoke-Commit](#invoke-commit) | Commits local changes (optionally with a tag)    
    | [Invoke-Push](#invoke-push) | Pushes the current local repo changes to the remote      
@@ -193,6 +193,39 @@ __-Repository__ (optional)
 the __Remote__ repository name
 
 &nbsp;
+
+# Get-Branches
+
+Returns a (LocalBranchCollection) object containing a list of local branches.
+you can optionally define an inline script that will take the branch collection 
+and return a filtered list of branches (or whatever you want)
+
+```
+   $branchFiltered = Get-Branches -Script {
+      param(
+         [LocalBranchCollection]$Branches
+      )
+      # do something with the branches 
+      return $Branches.Selesct(x => x.contains("fnafna").ToList()) 
+   }
+```
+
+### Parameters
+
+__-Path__ (optional)
+
+The __Root__ directory where the cloned repo will be written to. 
+
+__-Repository__ (optional)
+
+the __Local__ repository name
+
+__Script__ (optonal)
+
+A script that accepts a (LocalBranchCollection) collection and returns 
+a Filtered list of branches (or anything you want)
+
+
 
 # Get-Tags
 
