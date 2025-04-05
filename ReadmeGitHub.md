@@ -81,9 +81,11 @@ and is available to all cmdlets within the PS session.
 It can be altered by other cmdlets during the session or altered directly 
 using the __Set-GitConnection__ cmdlet.    
 
-The minium parameters you should set are __-Origranisation__ or __-User__ 
-and __-Token__ if the environment variable  __GitToken__ is not set 
-and you are manipulating remote repositories  
+The minium parameters you should set are __-Origranisation__ or __-User__.
+If the user environment __GitToken__ is set that will be used. 
+If the target repository requires apat token you can set it using the __-Token__ 
+parameter , or you can provide a script block that will return the token based on 
+the request being made (__-TokenScript__)   
 
 ```
  New-GitConnection -Organisation "myOrganisation" `
@@ -93,6 +95,17 @@ and you are manipulating remote repositories
             -TestConnection`
             ...
             ....
+
+ # using a script to set the token 
+ New-GitConnection -Organisation "blah org" -TestConnection -TokenScript {
+    param(
+        [GitHub.Service.Services.Common.GitRequest]$Request
+    )
+    if ($Request.Organisation -eq "blah org") {
+      return "asdasdasd"
+    }
+    return $Request.Token
+}           
 ```
 
 ### Parameters
@@ -142,6 +155,10 @@ Any valid email address to be used for commits and tags.
 __-TesConnection__ (switch)
 
 Tests the organisation/user remote repository to see if it is valid (New-GitConnection only)
+
+__-TokenScript__
+
+Inline or function script that returns a valid token. The script is passed the current (GitRequest) object which it can interogate
 
 &nbsp;
 
