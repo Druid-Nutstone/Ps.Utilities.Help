@@ -36,6 +36,7 @@ i.e $VerbosePreference = "Continue"
    | [Invoke-Clone](#invoke-clone) | Clones a remote repository locally parameter list 
    | [New-Branch](#new-branch) | Creates (or checks out) a local branch   
    | [Get-Branches](#get-branches) | Retrieves a list of local branches with an optional Script filter      
+   | [Get-Branch](#get-branch) | Cheks a branch exists , and if so checks it out and makes it the current branch 
    | [New-SemanticTag](#new-semantictag) | Creates a semantic version tag (using standard notation vx.x.x)      
    | [New-Tag](#new-tag) | Creates a semantic version tag (using standard notation vx.x.x)   
    | [Invoke-Commit](#invoke-commit) | Commits local changes (optionally with a tag)    
@@ -289,7 +290,30 @@ __Script__ (optonal)
 A script that accepts a (LocalBranchCollection) collection and returns 
 a Filtered list of branches (or anything you want)
 
+&nbsp;
 
+# Get-Branch
+
+Checks a branch exists. if it does it checks it out and pulls the latest version 
+
+```
+    Get-Branch -Branch "branchname" -Force 
+```
+
+### Parameters
+
+__-Branch__ 
+
+The branch to change to/pull
+
+__-Origin__ (optional)
+
+switch to the head root branch.
+
+__-Force__ (optional)
+
+If there are outstanding changes to the current (active) branch
+, forces an undo of any changes.
 
 # Get-Tags
 
@@ -383,7 +407,7 @@ __-AsString__
 Returns string representaion of the semantic tag (i.e v1.1.1)
 
 # Invoke-Commit
-Creates a local commit. With any changes made to the local repository. you can optionally create a tag to be associated with the commit.
+Creates a local commit. With any changes made to the local repository. you can optionally create a tag to be associated with the commit and also optionally push your changes to the remote.
 
 ```
     Invoke-Commit -Tag $newTag -Message "Test commit one with tag" 
@@ -407,6 +431,10 @@ The __Root__ directory where the cloned repo will be written to.
 __-Repository__ (optional)
 
 the __Remote__ repository name
+
+__-Push__ (optional) (switch)
+
+Pushes the commit the the remote repository 
 
 
 # Invoke-Push
