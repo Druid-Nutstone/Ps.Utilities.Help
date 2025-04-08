@@ -29,7 +29,7 @@ i.e $VerbosePreference = "Continue"
    
    | Cmdlet | Description | 
    | --- | --- | 
-   | [Get-GitToken](#get-gittoken) | Sets the git token based on a script function. This is a hookfor you to implement your own token processing (Oauth , internal token processing).     
+   | [Get-GitToken](#get-gittoken) | Sets the git token based on a script function. This is a hook for you to implement your own token processing (Oauth , internal token processing).     
    | [New-GitConnection](#new-gitconnection) | This __Must__ be the first cmdlet called. (apart from __Get-GitToken__) it initiates a git connection (both local and remote) and is used by __ALL__ other cmdlets  
    | [Set-GitConnection](#set-gitconnection) | Sets any of the parameters for a git connection (see __New-GitConnection__) for parameter list 
    | [Get-Repositories](#get-repositories) | Retrieves a list of repositories for the given user or organisation. With an optional Script filter to return a filtered list 
@@ -53,7 +53,11 @@ i.e $VerbosePreference = "Continue"
 
    | Cmdlet | Description | 
    | --- | --- | 
-   | [Get-WorFlows](#get-workflows) | Returns a (GitWorkFlowCollection) collection of workflows.      
+   | [Get-WorFlows](#get-workflows) | Returns a (GitWorkFlowCollection) collection of workflows. 
+   | [Set-WorkFlow](#set-workflow) | Creates a work flow request (for running).  
+   | [Set-WorkFlowInputVariable](#set-workflowinputvariable) | Updates a workflow (dispatch) variable in the GitWorkFlowRequest object     
+   | [Invoke-WorkFlow](#invoke-workflow) | Starts a workflow and optionally waits for the response.
+   | [Get-WorkFlowLogs](#get-workflowlogs) | Returns the unzipped logs from a specific workflow run         
 
 &nbsp;
 
@@ -697,8 +701,140 @@ Set to $false is you don't want any zip files to be extracted
 
 # Get-WorkFlows
 
-Returns a collection of workflows for the given user/org repository.
+Returns a collection (GitWorkFlowCollection) of workflows for the given user/org repository.
 
 ```
-   
+   $workFlows = Get-WorkFlows 
+
+   $myWorkflow = $workFlows.GetWorkFlowByName("myworkflow")
+
+   ...
 ```
+
+### Parameters 
+
+Non (see New-GitConnection)
+
+&nbsp;
+
+# Set-WorkFlow 
+
+Initialises a workflow request object. (GitWorkFlowRequest). It forst checks to see the workflow exists. 
+If no branch is specified it will get the workflow from the origin branch. 
+
+```
+    Set-WorkFlow -Name "myworkflow" -Branch "mybranch"
+
+    # or more likely 
+
+   $workflowResult = Set-WorkFlow -Name "myworkflow" | `
+         Set-WorkFlowInputVariable -Name "VAR1" -Value "VAR1 -  var1 test string" | `
+         Set-WorkFlowInputVariable -Name "Var2" -Value "Var 2 - value for 2" | `
+         Invoke-WorkFlow -Wait
+```
+
+## Parameters 
+
+__-Name__ (required)
+
+The name of the workflow as definied in github. 
+
+__-Branch__ (optional)
+
+The name of the branch where the workflow is defined 
+
+&nbsp;
+
+# Set-WorkFlowInputVariable
+
+Adds the value of a pre-defined variable in a workflow_dispatch yaml block for the 'current' work flow request. 
+The variable is checked to see if it exists and wether it is required (or not) before it is added to the request 
+
+```
+    $gitFlow = xxx
+    Set-WorkFlowInputVariable -GitFlow $gitflow -Name "VAR1" -Value "variablevalue" 
+
+    # or more likely
+    Set-WorkFlow -Name "myworkflow" | `
+         Set-WorkFlowInputVariable -Name "VAR1" -Value "varvalue" 
+
+```
+
+### Parameters 
+
+__-GitFlow__ (GitWorkFlowRequest) (Can be piped from pipeline)
+
+the GitWorkFlowRequest object that contains the current request properties
+
+__-Name__
+
+The name of the variables as defined in the workflow_dispatch input block
+
+__-Value__ [string]
+
+The name of the variables as defined in the workflow_dispatch input block
+
+String value of the variable 
+
+&nbsp;
+
+# Invoke-WorkFlow
+
+Start a workflow that is defined in the input variable -GitFlow (which can come from the pipeline). 
+It will execute the workflow and optionally wait for the response. It returns (GitFlowResponse)
+
+```
+   $workflowResponse = Invoke-WorkFlow -GitFlow $workFlowRequest -Wait
+   # do something with response 
+
+   # or more likely
+
+      $workflowResult = Set-WorkFlow -Name "myworkflow" | `
+         Set-WorkFlowInputVariable -Name "VAR1" -Value "VAR1 -  var1 test string" | `
+         Set-WorkFlowInputVariable -Name "Var2" -Value "Var 2 - value for 2" | `
+         Invoke-WorkFlow -Wait
+      if ($workflowResult.IsSuccess) {
+         # do something 
+      }   
+```
+
+### Parameters 
+
+__-GitFlow__ (can be from pipeline)
+
+input (GitFlowRequest) 
+
+__-Wait__ (switch parameter)
+
+Wait for response (GitFlowResponse)
+
+&nbsp;
+
+# Get-WorkFlowLogs
+
+Return either an unzipped directory of the logs from a workflow OR an amalgimated string of all logs
+found in the build output.
+
+```
+   # return logs a continus string stream 
+   $logData = $workflowResult | Get-WorkFlowLogs -TargetPath "C:\TempLogs" -AsString
+   Write-Host $logData 
+```
+
+### Parameters 
+
+__-WorkFlowResponse__ (GitWorkFlowResponse) 
+
+Input from workflowresult 
+
+__-WorkFlowId__ (long) (optional - if -WorkFlowResponse not specified)
+
+Unique workflow id from the workflow response
+
+__-TargetPath__ (string)
+
+Where to put the log files
+
+__-AsString__ (switch)
+
+If specified all the logs from the 'build' directory are extracted and combined into a single string (with environment.NewLine)
