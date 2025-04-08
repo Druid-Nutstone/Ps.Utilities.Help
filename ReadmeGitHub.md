@@ -26,6 +26,7 @@ i.e $VerbosePreference = "Continue"
 ```   
 
 ## Cmdlet Summary
+   
    | Cmdlet | Description | 
    | --- | --- | 
    | [Get-GitToken](#get-gittoken) | Sets the git token based on a script function. This is a hookfor you to implement your own token processing (Oauth , internal token processing).     
@@ -36,6 +37,7 @@ i.e $VerbosePreference = "Continue"
    | [New-Branch](#new-branch) | Creates (or checks out) a local branch   
    | [Get-Branches](#get-branches) | Retrieves a list of local branches with an optional Script filter      
    | [New-SemanticTag](#new-semantictag) | Creates a semantic version tag (using standard notation vx.x.x)      
+   | [New-Tag](#new-tag) | Creates a semantic version tag (using standard notation vx.x.x)   
    | [Invoke-Commit](#invoke-commit) | Commits local changes (optionally with a tag)    
    | [Invoke-Push](#invoke-push) | Pushes the current local repo changes to the remote      
    | [Invoke-Pull](#invoke-pull) | Pulls the latest of a repo/branch      
@@ -45,6 +47,12 @@ i.e $VerbosePreference = "Continue"
    | [New-Release](#new-release) | Creates a new GitHub release 
    | [Get-Release](#get-release) | Returns a release object (GitReleaseItem) by tagname , name or latest release  
    | [Get-ReleaseDownloads](#get-releasedownloads) | Downloads , to the specified path , all of the release assets.     
+
+### Action/Workflow Cmdlets 
+
+   | Cmdlet | Description | 
+   | --- | --- | 
+   | [Get-WorFlows](#get-workflows) | Returns a (GitWorkFlowCollection) collection of workflows.      
 
 &nbsp;
 
@@ -345,6 +353,35 @@ __-Patch__
 
 int patch portion to increment
 
+# New-Tag 
+
+basic alias of new-sematintic tag but a bit simpler.
+
+```
+$tagAsString = New-Tag -Major 1 -Minor 0 -Patch 23 -AsString   
+
+Write-Host $tagAsString # v1.0.23
+
+```
+
+### Parameters 
+
+__-Major__
+
+int major portion to increment 
+
+__-Minor__
+
+int minor portion to increment
+
+__-Patch__
+
+int patch portion to increment
+
+__-AsString__
+
+Returns string representaion of the semantic tag (i.e v1.1.1)
+
 # Invoke-Commit
 Creates a local commit. With any changes made to the local repository. you can optionally create a tag to be associated with the commit.
 
@@ -629,3 +666,11 @@ Downloads the 'latest' release from the repository
 __ExtractZip__ (bool) 
 
 Set to $false is you don't want any zip files to be extracted
+
+# Get-WorkFlows
+
+Returns a collection of workflows for the given user/org repository.
+
+```
+   
+```
