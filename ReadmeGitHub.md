@@ -34,6 +34,7 @@ i.e $VerbosePreference = "Continue"
    | [Set-GitConnection](#set-gitconnection) | Sets any of the parameters for a git connection (see __New-GitConnection__) for parameter list 
    | [Get-Repositories](#get-repositories) | Retrieves a list of repositories for the given user or organisation. With an optional Script filter to return a filtered list 
    | [Invoke-Clone](#invoke-clone) | Clones a remote repository locally parameter list 
+   | [Test-Branch](#test-branch) | Tests wether a local OR renmote branch exists 
    | [New-Branch](#new-branch) | Creates (or checks out) a local branch   
    | [Get-Branches](#get-branches) | Retrieves a list of local branches with an optional Script filter      
    | [Get-Branch](#get-branch) | Cheks a branch exists , and if so checks it out and makes it the current branch 
@@ -236,6 +237,32 @@ the __Remote__ repository name
 
 &nbsp;
 
+# Test-Branch 
+
+Checks the existence of a local OR renote branch. Returns either $true or $false
+
+```
+   if (!(Test-Branch -Branch "my-test-branch")) {
+      New-Branch -Branch "my-test-branch"
+   }
+```
+
+### Parameters
+
+__-Branch__ (required)
+
+The name of the (local) branch to create. If the branch already exists it is checked out.
+
+__-Path__ (optional)
+
+The __Root__ directory where the cloned repo will be written to. 
+
+__-Repository__ (optional)
+
+the __Remote__ repository name
+
+&nbsp;
+
 # New-Branch 
 
 Creates a new local branch on the local repostiory. if the branch exists it will be checked out.   
@@ -318,6 +345,14 @@ __-Force__ (optional)
 
 If there are outstanding changes to the current (active) branch
 , forces an undo of any changes.
+
+__-Path__ (optional)
+
+The __Root__ directory where the cloned repo will be written to. 
+
+__-Repository__ (optional)
+
+the __Local__ repository name
 
 # Get-Tags
 
