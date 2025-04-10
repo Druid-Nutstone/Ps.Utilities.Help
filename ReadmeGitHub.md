@@ -584,7 +584,7 @@ Merges a pull request into the origin branch. It must have been authorised (if n
 
 ```
 # to leave the remote and local branches intact after the merge 
-#  use the -LeaveRemoteBranch swith parameter
+#  use the -LeaveBranches switch parameter
 
 $latestPullRequest = Get-PullRequests -Open 
 
@@ -605,6 +605,11 @@ The GitPullResponse (can be Piped)
 __-Repository__
 
 Source remote repository name
+
+__-LeaveBranches__ (switchparameter)
+
+Leaves remnote and local branches intact (does not delete then) after the merge. 
+The default IS to delete them
 
 &nbsp;
 
