@@ -25,32 +25,60 @@ i.e $VerbosePreference = "Continue"
    Import-Module PS.Git 
 ```   
 
-## Cmdlet Summary
-   
+# Cmdlet Summary
+
+## Connecting to GitHub
+
+Cmdlets to initialise global connection to local and remote gihub. The connection settings are persisted throughout the powershell session.
+
    | Cmdlet | Description | 
    | --- | --- | 
    | [Get-GitToken](#get-gittoken) | Sets the git token based on a script function. This is a hook for you to implement your own token processing (Oauth , internal token processing).     
    | [New-GitConnection](#new-gitconnection) | This __Must__ be the first cmdlet called. (apart from __Get-GitToken__) it initiates a git connection (both local and remote) and is used by __ALL__ other cmdlets  
-   | [Set-GitConnection](#set-gitconnection) | Sets any of the parameters for a git connection (see __New-GitConnection__) for parameter list 
-   | [Get-Repositories](#get-repositories) | Retrieves a list of repositories for the given user or organisation. With an optional Script filter to return a filtered list 
+   | [Set-GitConnection](#set-gitconnection) | Sets any of the parameters  
+
+ ## Working With Remote Repositories 
+
+   | Cmdlet | Description | 
+   | --- | --- |
+   | [New-Repository](#new-repository) | Creates a new GitHub Repository with a main branch and readme.md  
+   | [Remove-Repository](#remove-repository) | Removes a previously created repository from github. (requires the correct permissions on the pat token)     
+   | [Test-Repository](#test-repository) | Checks for the existence of a repository. returns $true or flase     
+   | [Get-Repositories](#get-repositories) | Retrieves a list of repositories for the given user or organisation 
+   | [New-PullRequest](#new-pullrequest) | Creates a new pull request for the current remote repository 
+   | [Merge-PullRequest](#merge-pullrequest) | Merges a previously created pull request into the target branch (usually origin)       
+   | [Merge-Remote](#merge-remote) | Merges a remote source branch into a target branch (usually origin [main])    
+   | [Invoke-Push](#invoke-push) | Pushes the current local repo changes to the remote  
+   | [Get-PullRequests](#get-pullrequests) | Retrieves open or all pull remote requests  
+   | [New-Release](#new-release) | Creates a new GitHub release 
+   | [Get-Release](#get-release) | Returns a release object (GitReleaseItem) by tagname , name or latest release  
+   | [Get-ReleaseDownloads](#get-releasedownloads) | Downloads , to the specified path , all of the release assets.                  
+
+## Working with local Repositories   
+   | Cmdlet | Description | 
+   | --- | --- | 
    | [Invoke-Clone](#invoke-clone) | Clones a remote repository locally parameter list 
+   | [Invoke-Commit](#invoke-commit) | Commits local changes (optionally with a tag)    
+   | [Invoke-Pull](#invoke-pull) | Pulls the latest of a repo/branch       
+   
+## Working with local Branches
+   | Cmdlet | Description | 
+   | --- | --- | 
    | [Test-Branch](#test-branch) | Tests wether a local OR renmote branch exists 
    | [New-Branch](#new-branch) | Creates (or checks out) a local branch   
    | [Get-Branches](#get-branches) | Retrieves a list of local branches with an optional Script filter      
-   | [Get-Branch](#get-branch) | Cheks a branch exists , and if so checks it out and makes it the current branch 
+   | [Get-Branch](#get-branch) | Checks a branch exists , and if so checks it out and makes it the current branch 
+
+## Working with local Tags    
+   | Cmdlet | Description | 
+   | --- | --- |   
    | [New-SemanticTag](#new-semantictag) | Creates a semantic version tag (using standard notation vx.x.x)      
    | [New-Tag](#new-tag) | Creates a semantic version tag (using standard notation vx.x.x)   
-   | [Invoke-Commit](#invoke-commit) | Commits local changes (optionally with a tag)    
-   | [Invoke-Push](#invoke-push) | Pushes the current local repo changes to the remote      
-   | [Invoke-Pull](#invoke-pull) | Pulls the latest of a repo/branch      
-   | [New-PullRequest](#new-pullrequest) | Creates a new pull request for the current remote repository  
-   | [Get-PullRequests](#get-pullrequests) | Retrieves open or all pull remote requests      
-   | [Merge-PullRequest](#merge-pullrequest) | Merges a previously created pull request into the target branch (usually origin)  
-   | [New-Release](#new-release) | Creates a new GitHub release 
-   | [Get-Release](#get-release) | Returns a release object (GitReleaseItem) by tagname , name or latest release  
-   | [Get-ReleaseDownloads](#get-releasedownloads) | Downloads , to the specified path , all of the release assets.     
+   | [Test-Tag](#test-tag) | Creates a semantic version tag (using standard notation vx.x.x)     
+  
 
-### Action/Workflow Cmdlets 
+
+## Action/Workflow Cmdlets 
 
    | Cmdlet | Description | 
    | --- | --- | 
@@ -187,6 +215,70 @@ Sets individual or multiple properties of the git connection
 ### Parameters
 
 All parameters are the same as __New-GitConnection__
+
+# New-Repository 
+
+Creates a new repository in github. The repository will be created with a main branch and a readme.md. returns GitRepositoryResponse 
+
+```
+ $gitRepoResponse = New-Repository -Name "myrepo" -Description "testing new repository" -Private 
+```
+
+### Parameters
+
+__-Name__ (optional)
+
+Unique name of the repository. If not specified the -Repository name is used got the git connection.
+
+__-Description__ (required)
+
+[string] name of the repository 
+
+__-Private__ (optional) (switchparameter)
+
+Specifies the repository should be created as a privtate repo. The default is public.  
+
+&nbsp;
+
+# Remove-Repository 
+
+Removes a repository from the remote github. The fine-grained or classic PAT token must have the relevant permissions. 
+
+```
+Remove-Repository
+
+# or maybe 
+$repoName = "myrepo"
+if ((Test-Repository -Name $repoName)) {
+    $deleteRepoResponse = Remove-Repository -Name $repoName 
+    if (!$deleteRepoResponse.IsSuccess) {
+        exit
+    }
+    else {
+        Write-Host "Removed repository $($repositoryName)"
+    }
+}
+```
+### Parameters 
+
+__Name__ (optional)
+
+Unique name of the repository. If not specified the -Repository name is used got the git connection.
+ 
+&nbsp;
+
+# Test-Repository 
+
+Checks that a repository exists. Returns $tru or false 
+
+```
+$state = Test-Repository -Name "myrepo"
+```
+### Parmameters 
+
+__Name__ (optional)
+
+Unique name of the repository. If not specified the -Repository name is used got the git connection.
 
 &nbsp;
 
@@ -445,6 +537,35 @@ __-AsString__
 
 Returns string representaion of the semantic tag (i.e v1.1.1)
 
+# Test-Tag 
+
+Checks if the current repository has any tags. returns $true or $false 
+
+```
+# look for semantic tags - if not found create or increment last   
+if (!(Test-Tag -SemanticTags)) {
+    $newTag = New-Tag 
+} else {
+    $newTag = Get-LatestTag -Increment -AsString
+}   
+```
+
+### Parameters 
+
+__-Path__ (optional)
+
+The __Root__ directory where the local repository resides.
+
+__-Repository__ (optional)
+
+the local repository name
+
+__-SemanticTags__ (optional) (switchparameter)
+
+Only looks for standard semantic tags (vx.x.x)
+
+&nbsp;
+
 # Invoke-Commit
 Creates a local commit. With any changes made to the local repository. you can optionally create a tag to be associated with the commit and also optionally push your changes to the remote.
 
@@ -610,6 +731,40 @@ __-LeaveBranches__ (switchparameter)
 
 Leaves remnote and local branches intact (does not delete then) after the merge. 
 The default IS to delete them
+
+&nbsp;
+
+# Merge-Remote 
+
+Meges a remote source branch into a target branch. By default , if the merge is a success, both the remote and local branches will be deleted
+
+```
+$mergeResult = Merge-Remote -Comment "Merged by process" -SourceBranch "myrepo" -DestinationBranch "main"  -DeleteBranches
+
+if ($mergeResult.Merged) {
+   Write-Host "merged"
+} else {
+   Write-Host $mergeResult.Message
+}
+```
+
+### Parameters 
+
+__-Comment__ (required) 
+
+merge comment added to the merge 
+
+__-SourceBranch__ (optional)
+
+The source branch to merge. If not specified the branch from the Git-Connection is used 
+
+__-DestinationBranch__ (optional)
+
+The target branch to merge too. If not specified , the repository origin (main) is used. 
+
+__-DeleteBranches__ (optional) (switchparameter)
+
+Deletes the local and remote branches if the merge is succesfull (the default is $true (isPresent)
 
 &nbsp;
 
