@@ -50,6 +50,7 @@ Cmdlets to initialise global connection to local and remote gihub. The connectio
    | [Merge-Remote](#merge-remote) | Merges a remote source branch into a target branch (usually origin [main])    
    | [Invoke-Push](#invoke-push) | Pushes the current local repo changes to the remote  
    | [Get-PullRequests](#get-pullrequests) | Retrieves open or all pull remote requests  
+   | [Get-PullRequest](#get-pullrequest) | Retrieves the detial of a specific pull request. e.g wether it can be merged      
    | [New-Release](#new-release) | Creates a new GitHub release 
    | [Get-Release](#get-release) | Returns a release object (GitReleaseItem) by tagname , name or latest release  
    | [Get-ReleaseDownloads](#get-releasedownloads) | Downloads , to the specified path , all of the release assets.                  
@@ -727,6 +728,58 @@ Returns a GitPullResponse object of the first open pull request
 __-Repository__ (optional)
 
 The target remote repository 
+
+&nbsp;
+
+# Get-PullRequest 
+
+Returns the (GitPullRequestDetail) detail of a specific pull request. e.g the status of the 
+pullrequest - if it is blocked or stale. you can use this to check the status of the 
+pull request and merge if it is in the correct state
+
+The returned object (GitPullRequestDetail) provides several properties 
+that can be interrogated to get the state of the pull request.
+
+#### GitPullRequestDetail
+
+   | Property | Description | 
+   | --- | --- |
+   | IsBlocked | Identifies if the pull request is awaiting approval
+   | MergeState | One of Clean, Unstable, Dirty, Unknown, Blocked, Behind, Draft, Has_Hooks, Unsupported  
+   | CanMerge | [bool] wether the pullrequest can be merged  
+   | Reviewers | array of reviewers assinged to the pull request    
+
+
+&nbsp;
+
+```
+$pullRequestResponse = New-PullRequest -Title "i created a pull request" -Description "Testing" -Reviewers "Druid-Nutstone-Test-User"
+
+$pullResponseDetail = $pullRequestResponse | Get-PullRequest 
+
+if ($pullResponseDetail.CanMerge) {
+    Merge-PullRequest -Number $pullResponseDetail.Number -Comment "Merged" # -LeaveBranches to NOT delete local and remote branches
+}
+else {
+    if ($pullResponseDetail.IsBlocked) {
+        Write-Host "Waiting for approval from:-"
+        Write-Host ($pullResponseDetail.Reviewers | Format-Table | Out-String)  
+    }
+}
+
+```
+
+### Parameters 
+
+__PullResponse__ (optional) 
+
+(GetPullResponse) object that contains the pull number
+
+__PullNumber__ ([int])
+
+The unique integer pull request number
+
+
 
 &nbsp;
 
