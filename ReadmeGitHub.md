@@ -41,7 +41,7 @@ Cmdlets to initialise global connection to local and remote gihub. The connectio
 
    | Cmdlet | Description | 
    | --- | --- |
-   | [New-Repository](#new-repository) | Creates a new GitHub Repository with a main branch and readme.md  
+   | [New-Repository](#new-repository) | Creates a new GitHub Repository object. use Invoke-NewRepository to create it   
    | [Remove-Repository](#remove-repository) | Removes a previously created repository from github. (requires the correct permissions on the pat token)     
    | [Test-Repository](#test-repository) | Checks for the existence of a repository. returns $true or flase     
    | [Get-Repositories](#get-repositories) | Retrieves a list of repositories for the given user or organisation 
@@ -218,10 +218,10 @@ All parameters are the same as __New-GitConnection__
 
 # New-Repository 
 
-Creates a new repository in github. The repository will be created with a main branch and a readme.md. returns GitRepositoryResponse 
+Creates a new repository object. use Invoke-NewRepository to actually create the repository 
 
 ```
- $gitRepoResponse = New-Repository -Name "myrepo" -Description "testing new repository" -Private 
+ $gitRepoResponse = New-Repository -Name "myrepo" -Description "testing new repository" -Private | Invoke-NewRepository
 ```
 
 ### Parameters
@@ -237,6 +237,28 @@ __-Description__ (required)
 __-Private__ (optional) (switchparameter)
 
 Specifies the repository should be created as a privtate repo. The default is public.  
+
+__-MinimumRewiewers__ [int] (optional)
+
+Specifies the minimum number of reviewers for pull requests. Note this only wirks for orgnisations
+or if the repository is public
+
+&nbsp;
+
+# Invoke-NewRepository
+
+Creates a new repository from the GitRepositoryRequest object passed in. It returns a GitRepositoryResponse object.
+
+```
+ $gitRepoResponse = Invoke-NewRepository -Repository $newRepoObject 
+
+```
+
+### Parameters 
+
+__-Repository__ (can be from pipeline)
+
+The GitRepositoryRequest object created by New-Repository
 
 &nbsp;
 
@@ -663,11 +685,20 @@ The Description of the pull request
 
 __-Branch__ (optional)
 
-The target branch of the pull (merge) request. 
+The target branch of the pull (merge) request. If NOT specified the branch defined in the 
+GitConnection object is used  
 
 __-Repository__ (optional)
 
 the __Remote__ repository name
+
+__-Reviewers__ [string[]]
+
+A string array of users that are required to approve the pull requests
+
+__-TeamReviewers__ [string[]]
+
+A string array of teams required to approve the pull request. 
 
 &nbsp;
 
