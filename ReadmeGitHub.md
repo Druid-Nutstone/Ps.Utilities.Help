@@ -19,7 +19,21 @@ Or to set the __Global__ verbose variable
 
 i.e $VerbosePreference = "Continue"
 
-## Using PS.Selenium 
+## HELP 
+
+all Cmdlets now have in-built help. to display help for any cmdlet add the -Help switch parameter 
+i.e 
+__New-GitConnection -Help__ will display help specific to New-GitConnection
+
+Or 
+
+Get-GitHelp -List (display's available cmdlets in PS.Git) 
+
+Get-GitHelp -Console (displays ALL help for all cmdlets on the console)
+
+__Note__ this will be more up-to-date than this documentation!
+
+## Using PS.Git 
 ```
    Install-Module PS.Git
    Import-Module PS.Git 
