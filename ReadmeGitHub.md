@@ -368,7 +368,7 @@ __-Branch__ (required)
 
 The name of the (local) branch to create. If the branch already exists it is checked out.
 
-__-Path__ (optional)
+__-LocalRepository__ (optional)
 
 The __Root__ directory where the cloned repo will be written to. 
 
@@ -395,7 +395,7 @@ __-Branch__ (required)
 
 The name of the (local) branch to create. If the branch already exists it is checked out.
 
-__-Path__ (optional)
+__-LocalRepository__ (optional)
 
 The __Root__ directory where the cloned repo will be written to. 
 
@@ -423,7 +423,7 @@ and return a filtered list of branches (or whatever you want)
 
 ### Parameters
 
-__-Path__ (optional)
+__-LocalRepository__ (optional)
 
 The __Root__ directory where the cloned repo will be written to. 
 
@@ -461,7 +461,7 @@ __-Force__ (optional)
 If there are outstanding changes to the current (active) branch
 , forces an undo of any changes.
 
-__-Path__ (optional)
+__-LocalRepository__ (optional)
 
 The __Root__ directory where the cloned repo will be written to. 
 
@@ -481,7 +481,7 @@ Gets a list of tags from the local repository. It returns a GitTagCollection obj
 
 ### Parameters
 
-__-Path__ (optional)
+__-LocalRepository__ (optional)
 
 The __Root__ directory where the cloned repo will be written to. 
 
@@ -575,7 +575,7 @@ if (!(Test-Tag -SemanticTags)) {
 
 ### Parameters 
 
-__-Path__ (optional)
+__-LocalReppository__ (optional)
 
 The __Root__ directory where the local repository resides.
 
@@ -607,7 +607,7 @@ __-Message__
 
 The commit description. If the tag is used the same description is used for the commit and tag
 
-__-Path__ (optional)
+__-LocalRepository__ (optional)
 
 The __Root__ directory where the cloned repo will be written to. 
 
@@ -630,7 +630,7 @@ Pushes any commits from the local repository to the remote repository.
 
 ### Parameters
 
-__-Path__ (optional)
+__-LocalRepository__ (optional)
 
 The __Root__ directory where the cloned repo will be written to. 
 
