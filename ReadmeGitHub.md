@@ -39,1095 +39,2282 @@ __Note__ this will be more up-to-date than this documentation!
    Import-Module PS.Git 
 ```   
 
-# Cmdlet Summary
-
-## Connecting to GitHub
-
-Cmdlets to initialise global connection to local and remote gihub. The connection settings are persisted throughout the powershell session.
-
-   | Cmdlet | Description | 
-   | --- | --- | 
-   | [Get-GitToken](#get-gittoken) | Sets the git token based on a script function. This is a hook for you to implement your own token processing (Oauth , internal token processing).     
-   | [New-GitConnection](#new-gitconnection) | This __Must__ be the first cmdlet called. (apart from __Get-GitToken__) it initiates a git connection (both local and remote) and is used by __ALL__ other cmdlets  
-   | [Set-GitConnection](#set-gitconnection) | Sets any of the parameters  
-
- ## Working With Remote Repositories 
-
-   | Cmdlet | Description | 
-   | --- | --- |
-   | [New-Repository](#new-repository) | Creates a new GitHub Repository object. use Invoke-NewRepository to create it   
-   | [Remove-Repository](#remove-repository) | Removes a previously created repository from github. (requires the correct permissions on the pat token)     
-   | [Test-Repository](#test-repository) | Checks for the existence of a repository. returns $true or flase     
-   | [Get-Repositories](#get-repositories) | Retrieves a list of repositories for the given user or organisation 
-   | [New-PullRequest](#new-pullrequest) | Creates a new pull request for the current remote repository 
-   | [Merge-PullRequest](#merge-pullrequest) | Merges a previously created pull request into the target branch (usually origin)       
-   | [Merge-Remote](#merge-remote) | Merges a remote source branch into a target branch (usually origin [main])    
-   | [Invoke-Push](#invoke-push) | Pushes the current local repo changes to the remote  
-   | [Get-PullRequests](#get-pullrequests) | Retrieves open or all pull remote requests  
-   | [Get-PullRequest](#get-pullrequest) | Retrieves the detial of a specific pull request. e.g wether it can be merged      
-   | [New-Release](#new-release) | Creates a new GitHub release 
-   | [Get-Release](#get-release) | Returns a release object (GitReleaseItem) by tagname , name or latest release  
-   | [Get-ReleaseDownloads](#get-releasedownloads) | Downloads , to the specified path , all of the release assets.                  
-
-## Working with local Repositories   
-   | Cmdlet | Description | 
-   | --- | --- | 
-   | [Invoke-Clone](#invoke-clone) | Clones a remote repository locally parameter list 
-   | [Invoke-Commit](#invoke-commit) | Commits local changes (optionally with a tag)    
-   | [Invoke-Pull](#invoke-pull) | Pulls the latest of a repo/branch       
+##
+##
+# Cmdlet Categories
    
-## Working with local Branches
-   | Cmdlet | Description | 
-   | --- | --- | 
-   | [Test-Branch](#test-branch) | Tests wether a local OR renmote branch exists 
-   | [New-Branch](#new-branch) | Creates (or checks out) a local branch   
-   | [Get-Branches](#get-branches) | Retrieves a list of local branches with an optional Script filter      
-   | [Get-Branch](#get-branch) | Checks a branch exists , and if so checks it out and makes it the current branch 
-
-## Working with local Tags    
-   | Cmdlet | Description | 
-   | --- | --- |   
-   | [New-SemanticTag](#new-semantictag) | Creates a semantic version tag (using standard notation vx.x.x)      
-   | [New-Tag](#new-tag) | Creates a semantic version tag (using standard notation vx.x.x)   
-   | [Test-Tag](#test-tag) | Creates a semantic version tag (using standard notation vx.x.x)     
-  
-
-
-## Action/Workflow Cmdlets 
-
-   | Cmdlet | Description | 
-   | --- | --- | 
-   | [Get-WorFlows](#get-workflows) | Returns a (GitWorkFlowCollection) collection of workflows. 
-   | [Set-WorkFlow](#set-workflow) | Creates a work flow request (for running).  
-   | [Set-WorkFlowInputVariable](#set-workflowinputvariable) | Updates a workflow (dispatch) variable in the GitWorkFlowRequest object     
-   | [Invoke-WorkFlow](#invoke-workflow) | Starts a workflow and optionally waits for the response.
-   | [Get-WorkFlowLogs](#get-workflowlogs) | Returns the unzipped logs from a specific workflow run         
-
-&nbsp;
-
-# Get-GitToken 
-
-Entry point for creating a git token. if the environment variable __GitToken__ 
-is set for the user , it will just return that. 
-Otheriwse it will execute the script defined by the __-Script__ parameter. 
-The script defined __Must__ return a single string that is a valid git token. 
-That token will then be stored in the user __GitToken__ user envrionment variable 
-
-```
-    $gitToken = Get-GitToken -Script {
-      return my_way_of_getting_a_token
-      # do something that returns a valid token
-    }
-```
-
-### Parameters
-
-__-Script__
-
-A scriptBlock that returns a [string] representation of a valid GitHub Token.
-
-&nbsp;
-
-# New-GitConnection 
-
-Used by all other cmdlets and must be the first cmdlet called in a PS session. 
-before another direct git cmdlet is called. 
-
-The connection object it creates is stored in a memorycache object 
-and is available to all cmdlets within the PS session. 
-It can be altered by other cmdlets during the session or altered directly 
-using the __Set-GitConnection__ cmdlet.    
-
-The minium parameters you should set are __-Origranisation__ or __-User__.
-If the user environment __GitToken__ is set that will be used. 
-If the target repository requires apat token you can set it using the __-Token__ 
-parameter , or you can provide a script block that will return the token based on 
-the request being made (__-TokenScript__)   
-
-```
- New-GitConnection -Organisation "myOrganisation" `
-            -Repository "myReo" `
-            -CredetialUser "myUser" ` 
-            -Token "asdasd" ` 
-            -TestConnection`
-            ...
-            ....
-
- # using a script to set the token 
- New-GitConnection -Organisation "blah org" -TestConnection -TokenScript {
-    param(
-        [GitHub.Service.Services.Common.GitRequest]$Request
-    )
-    if ($Request.Organisation -eq "blah org") {
-      return "asdasdasd"
-    }
-    return $Request.Token
-}           
-```
-
-### Parameters
-
-__ALL__ parameters are optional!
-
-__-Organisation__
-
-The name of the github organisation. If you don't specify this , you must specify the __-User__
-
-__-User__
-
-The name of the user's repo. 
-
-__-Repository__
-
-Then name of the GitHub (user or organisation) remote repository name. 
-
-__-CredentialUser__
-
-The name of the user to use to authenticate. This can be any name when using a token. (which is currently the only mechanism supported!)
-
-__-CredentialPassword__
-
-Not currently used - it will set the __-Token__ parameter if specified 
-
-__-Token__
-
-if specified , the plain-text token is used to authenticate. if __Not__ specified , the __user__ environment variable __GitToken__ will be used to populate the token.
-
-__-LocalRepository__
-
-The root (directory) path to the local repository. this is combined with the __-Repository__ parameter to create the actual full path of the local repository 
-
-__-Branch__
-
-The local branch to create/use. this is set automatally by other cmdlets (i.e __Set-Branch__)  
-
-__DefaultBranch__
-
-The defalt (origin) branch (e.g  master/main etc)
-
-__Email__
-
-Any valid email address to be used for commits and tags.
-
-__-TesConnection__ (switch)
-
-Tests the organisation/user remote repository to see if it is valid (New-GitConnection only)
-
-__-TokenScript__
-
-Inline or function script that returns a valid token. The script is passed the current (GitRequest) object which it can interogate
-
-&nbsp;
-
-# Set-GitConnection
-
-Sets individual or multiple properties of the git connection 
-
-```
-   Set-GitConnection -Token "xxx" 
-```
-
-### Parameters
-
-All parameters are the same as __New-GitConnection__
-
-# New-Repository 
-
-Creates a new repository object. use Invoke-NewRepository to actually create the repository 
-
-```
- $gitRepoResponse = New-Repository -Name "myrepo" -Description "testing new repository" -Private | Invoke-NewRepository
-```
-
-### Parameters
-
-__-Name__ (optional)
-
-Unique name of the repository. If not specified the -Repository name is used got the git connection.
-
-__-Description__ (required)
-
-[string] name of the repository 
-
-__-Private__ (optional) (switchparameter)
-
-Specifies the repository should be created as a privtate repo. The default is public.  
-
-__-MinimumRewiewers__ [int] (optional)
-
-Specifies the minimum number of reviewers for pull requests. Note this only wirks for orgnisations
-or if the repository is public
-
-&nbsp;
-
-# Invoke-NewRepository
-
-Creates a new repository from the GitRepositoryRequest object passed in. It returns a GitRepositoryResponse object.
-
-```
- $gitRepoResponse = Invoke-NewRepository -Repository $newRepoObject 
-
-```
-
-### Parameters 
-
-__-Repository__ (can be from pipeline)
-
-The GitRepositoryRequest object created by New-Repository
-
-&nbsp;
-
-# Remove-Repository 
-
-Removes a repository from the remote github. The fine-grained or classic PAT token must have the relevant permissions. 
-
-```
-Remove-Repository
-
-# or maybe 
-$repoName = "myrepo"
-if ((Test-Repository -Name $repoName)) {
-    $deleteRepoResponse = Remove-Repository -Name $repoName 
-    if (!$deleteRepoResponse.IsSuccess) {
-        exit
-    }
-    else {
-        Write-Host "Removed repository $($repositoryName)"
-    }
-}
-```
-### Parameters 
-
-__Name__ (optional)
-
-Unique name of the repository. If not specified the -Repository name is used got the git connection.
- 
-&nbsp;
-
-# Test-Repository 
-
-Checks that a repository exists. Returns $tru or false 
-
-```
-$state = Test-Repository -Name "myrepo"
-```
-### Parmameters 
-
-__Name__ (optional)
-
-Unique name of the repository. If not specified the -Repository name is used got the git connection.
-
-&nbsp;
-
-# Get-Repositories 
-
-Returns a list of repositories for the given user or organisation.
-With an optional __-Script__ parameter that is a user-defined powershell script 
-that can filter the returned object (GitRepositoryListCollection)
-
-```
-Get-Repositories -Script {
-    param(
-        [GitHub.Service.Models.GitRepositoryListCollection]$Repositories
-    )
-    return $Repositories | Where-Object { $_.Name -match "ps." }
-}
-```
-
-### Parameters
-
-__-Script__
-
-A user defined powershell script that returns a filtered list of repositories 
-(or anything else).  
-
-&nbsp;
-
-# Invoke-Clone 
-
-Clones a remote repository. The __-Path__ and __-Repository__ parameters will automatically populate the Git-Connection properties for use by all other cmdlets.  
-
-```
-Invoke-Clone -Path "C:\Temp" -Repository "Test-Repo" 
-
-# Clone to C:\Temp\Test-Repo
-
-```
-
-### Parameters
-
-__-Path__
-
-The __Root__ directory where the cloned repo will be written to. 
-
-__-Repository__
-
-the __Remote__ repository name
-
-&nbsp;
-
-# Test-Branch 
-
-Checks the existence of a local OR renote branch. Returns either $true or $false
-
-```
-   if (!(Test-Branch -Branch "my-test-branch")) {
-      New-Branch -Branch "my-test-branch"
-   }
-```
-
-### Parameters
-
-__-Branch__ (required)
-
-The name of the (local) branch to create. If the branch already exists it is checked out.
-
-__-LocalRepository__ (optional)
-
-The __Root__ directory where the cloned repo will be written to. 
-
-__-Repository__ (optional)
-
-the __Remote__ repository name
-
-&nbsp;
-
-# New-Branch 
-
-Creates a new local branch on the local repostiory. if the branch exists it will be checked out.   
-
-```
-New-Branch -Branch "Test-David" 
-
-# the local repository can be set with -Path and -Repository
-
-```
-
-### Parameters
-
-__-Branch__ (required)
-
-The name of the (local) branch to create. If the branch already exists it is checked out.
-
-__-LocalRepository__ (optional)
-
-The __Root__ directory where the cloned repo will be written to. 
-
-__-Repository__ (optional)
-
-the __Remote__ repository name
-
-&nbsp;
-
-# Get-Branches
-
-Returns a (LocalBranchCollection) object containing a list of local branches.
-you can optionally define an inline script that will take the branch collection 
-and return a filtered list of branches (or whatever you want)
-
-```
-   $branchFiltered = Get-Branches -Script {
-      param(
-         [LocalBranchCollection]$Branches
-      )
-      # do something with the branches 
-      return $Branches.Selesct(x => x.contains("fnafna").ToList()) 
-   }
-```
-
-### Parameters
-
-__-LocalRepository__ (optional)
-
-The __Root__ directory where the cloned repo will be written to. 
-
-__-Repository__ (optional)
-
-the __Local__ repository name
-
-__Script__ (optonal)
-
-A script that accepts a (LocalBranchCollection) collection and returns 
-a Filtered list of branches (or anything you want)
-
-&nbsp;
-
+## Branches
+   
+| Cmdlet | Description |
+|---|---|
+| [Get-Branch](#get-branch) | Checks out the named (or default branch) if it exists. Any uncommited changes on the current branch will be REMOVED if the -Force parameter is specified otherwise an error will be thrown. |
+| [Get-Branches](#get-branches) | Returns either a list of local branches or a filtered list based on the supplied ScriptBlock. The script block will be provides a LocalBranchCollection via a parameter |
+| [Get-CurrentBranch](#get-currentbranch) | Returns the current branch. The script block will be provides a LocalBranchCollection via a parameter |
+| [New-Branch](#new-branch) | Creates and checks out a new branch. Or , if the branch exists, Checks it out. |
+| [Test-Branch](#test-branch) | Tests wether a local branch existrs or not |
+## Connection
+   
+| Cmdlet | Description |
+|---|---|
+| [Get-GitConnection](#get-gitconnection) | Returns specific or all of the properties of the git-connection |
+| [Get-GitToken](#get-gittoken) | Defined ScriptBlock that returns a string that is a valid Git hub Token.  That is then stored in the git connection object |
+| [New-GitConnection](#new-gitconnection) | Creates a global git connection that can be used both locally and remotely It is available throughout the powershell session for all other cmdlets |
+| [Set-GitConnection](#set-gitconnection) | Sets one or more git connection properties |
+## Release
+   
+| Cmdlet | Description |
+|---|---|
+| [Get-Release](#get-release) | Returns a list of Releases (GitReleaseCollection) or a single release (GitReleaseItem) Use the -Latest, -Name and -Tag parameters to narrow the search |
+| [Get-ReleaseDownloads](#get-releasedownloads) | Downloads the release content of a release and returns a (GitDownloadReleaseResponse) which contains fileinfo information about the files downloaded By default all release artifacts are download , and , if they are zipped , they are unzipped to the target -Path |
+| [New-Release](#new-release) | Creates a new remote release |
+## Repository
+   
+| Cmdlet | Description |
+|---|---|
+| [Add-RepositoryUser](#add-repositoryuser) | Adds to the the repositoryrequest a valid user whom is available to review |
+| [Get-Repositories](#get-repositories) | Gets a list of remote repositories for the current user/Organisation |
+| [Invoke-NewRepository](#invoke-newrepository) | Creates a new remote repository base on the input from a GitRepositoryRequest object |
+| [New-Repository](#new-repository) | Creates a new GitRepositoryRequest request |
+| [Remove-Repository](#remove-repository) | Removes a remote/local repository from the current user/organisation and or the local repository |
+| [Test-Repository](#test-repository) | Tests for the existence of a remote repository |
+| [Get-PullRequest](#get-pullrequest) | Returns details about a specific pull request. Use in conjunction with Get-PullRequests |
+| [Get-PullRequests](#get-pullrequests) | Returns index details about pull requests (open or otheriwse) for the current repository It will return (GitPullResponse) or (GitPullRequestCollection) for multiple entries if there are none found an empty object is returned (or error is -ErrorAction is 'Stop' |
+| [New-PullRequest](#new-pullrequest) | Creates a new pull request. It will return (GitPullResponse) or (GitPullRequestCollection) for multiple entries if there are none found an empty object is returned (or error is -ErrorAction is 'Stop' |
+| [Merge-PullRequest](#merge-pullrequest) | Merges a pullrequest into  |
+| [Merge-Remote](#merge-remote) | Merges remote branches |
+| [Invoke-Commit](#invoke-commit) | Commits any changes in the current repository. with an optional tag and optionall pushes the changes |
+| [Invoke-Pull](#invoke-pull) | Pulls the latest changes for the specified repo and branch. if the branch specified is not the current branch - it is checkout |
+| [Invoke-Push](#invoke-push) | Pushes any commited changes on the current repository |
+| [Test-Changes](#test-changes) | Tests if there any any uncommited chages to the current local repository |
+| [Invoke-Clone](#invoke-clone) | Clones a remote repository locally. It is an itelligent clone, in that , if the repository already exists locally, it will not clone it again. but , pull the latest version from the remote if the -Force parameter is set, it will remove the local repo (including uncomitted changes) and clone again |
+## Tags
+   
+| Cmdlet | Description |
+|---|---|
+| [Get-LatestTag](#get-latesttag) | Returns the latest tag (semantic) of the current respository. you can then increment it if there are no tags an error is thrown UNLESS erroraction is set to 'continue' in which case $null is returned |
+| [Get-Tags](#get-tags) | Returns a GitTagCollection object tags in the current repo |
+| [Invoke-Tag](#invoke-tag) | Creates a tag locally and remotely based on the current commit. It returns a SemanticVersion or null  |
+| [New-SemanticTag](#new-semantictag) | Returns a SemanticVersion that that can be used as a tag. It uses the standard GitHub semantic versioning scheme. (v)major.minor.patch if the -Tags option (or value from pipeline) is specified the tag will be incremented before it is returned |
+| [New-Tag](#new-tag) | Returns a new SemanticVersion that that can be used as a tag. |
+| [Remove-Tag](#remove-tag) | Removes an existing tag from the local and remote repository |
+| [Test-Tags](#test-tags) | Returns a bool if the repository has any tags. use the -SemanticTagsto check for semantic tags only |
+## Utility
+   
+| Cmdlet | Description |
+|---|---|
+| [Copy-ToRepository](#copy-torepository) | Utility to copy files from a local path to the current repository. The -Path parameter allows filespec and or root directory definitions This needs to be updated to allow for the path being a directory and the directory copied as well |
+## VisualStudio
+   
+| Cmdlet | Description |
+|---|---|
+| [Get-ProjectControl](#get-projectcontrol) | Returns a VisualStudioControlGroup from the given path (full or partial)  if the -Path parameter does not contains .csproj - the first .cspro file gound is used The returned object exposes the follwing Methods :-      GetProjectType() - returns the string project type      GetProjectOrganisation() - returns the string organisation      GetProjectUser() - returns the string user      GetProjectRepository() - returns the string repository      GetProjectWorkFlow() - returns the workflow to invoke      GetProjectWorkFlowRepository() - returns the workflow repository      GetProjectProjectPath() - returns the relative propject path (directory) of the target project (not including the .csproj)      IsOrg() - returns a boolean if the connection is an organisation |
+| [Get-ProjectProperties](#get-projectproperties) | Returns the a collection of custom ProjectGroup entries from a visual studio .csproj file So to define nuget properties in the project:-     <PropertyGroup Label="Control">        <ProjectType>Nuget</ProjectType>        <OrganisationOrUser>userororg</OrganisationOrUser>        <Repository>TestRepository</Repository>      </PropertyGroup>     <PropertyGroup Label="Nuget">        <Version>1.0.0</Version>        <PackageId>TestPackage</PackageId>        .....     </PropertyGroup> |
+| [Get-ProjectPropertyValue](#get-projectpropertyvalue) | Returns A specific property value from a projectgroup group |
+| [Get-ProjectType](#get-projecttype) | Returns the Project type enum of a csproj project from the Control ProjectGroup |
+| [Set-ProjectPropertyValue](#set-projectpropertyvalue) | Sets A specific property value in a projectgroup group |
+## WorkFlow
+   
+| Cmdlet | Description |
+|---|---|
+| [Get-WorkFlowLogs](#get-workflowlogs) | Returns the logs from a workflow run. Etiehr to a file or the console. |
+| [Get-WorkFlows](#get-workflows) | Returns all the defined workflows for the given repository. |
+| [Invoke-WorkFlow](#invoke-workflow) | Runs a given workflow and optionally waits until it is complete You would typically use this cmdlet with Set-Workflow and Set-WorkFlowInputVariable  If the workflow has required variables, and they are not set. An error occurs. |
+| [Set-WorkFlowInputVariable](#set-workflowinputvariable) | Sets the given variable value (or an Environment Value) to the current workflow request and returns the updated (GitWorkFlowRequest) object |
+| [Set-WorkFlow](#set-workflow) | Initialises a GitWorkFlowRequest object with the variables required from the workflow definition |
+   
+# Branches Detail
+   
+   
+   
+   
 # Get-Branch
-
-Checks a branch exists. if it does it checks it out and pulls the latest version 
-
-```
-    Get-Branch -Branch "branchname" -Force 
-```
-
-### Parameters
-
-__-Branch__ 
-
-The branch to change to/pull
-
-__-Origin__ (optional)
-
-switch to the head root branch.
-
-__-Force__ (optional)
-
-If there are outstanding changes to the current (active) branch
-, forces an undo of any changes.
-
-__-LocalRepository__ (optional)
-
-The __Root__ directory where the cloned repo will be written to. 
-
-__-Repository__ (optional)
-
-the __Local__ repository name
-
-# Get-Tags
-
-Gets a list of tags from the local repository. It returns a GitTagCollection object. t can be piped into New-Tag
-
-```
-   $tags = Get-Tags 
-   # if not set use -Path and -Repository to set the local repository path
-```
-
-
-### Parameters
-
-__-LocalRepository__ (optional)
-
-The __Root__ directory where the cloned repo will be written to. 
-
-__-Repository__ (optional)
-
-the __Remote__ repository name
-
-&nbsp;
-
-# New-SemanticTag
-
-Creates a new semantic tag that conforms to the GITHUB release version Vxx.xx.xx (Major , Minor , Patch) 
-
-To create the 'Next' release , you can pipe the results of the Get-Tags cmdlet into this cmdlet 
-
-```
-   # initialise a new tag  
-
-   $newTag = New-Tag -Minor 1
-   # creates v1.1.0
-
-   # get last tag and increment the latest patch version 
-   $newTag = Get-Tags | New-SemanticTag -TagIncrment Patch
-   #creates Vx.x.(x+1) or if no tags then v1.0.0 
-```
-
-
-### Parameters
-
-__-Tags__ (can be piped)
-
-A GitTagCollection object that contains the tags from the current local repository
-
-__-TagIncrement__ 
-
-enum that describes the semantic version portion to increment (Major, Minor, Patch)
-
-__-Major__
-
-int major portion to increment 
-
-__-Minor__
-
-int minor portion to increment
-
-__-Patch__
-
-int patch portion to increment
-
-# New-Tag 
-
-basic alias of new-sematintic tag but a bit simpler.
-
-```
-$tagAsString = New-Tag -Major 1 -Minor 0 -Patch 23 -AsString   
-
-Write-Host $tagAsString # v1.0.23
-
-```
-
-### Parameters 
-
-__-Major__
-
-int major portion to increment 
-
-__-Minor__
-
-int minor portion to increment
-
-__-Patch__
-
-int patch portion to increment
-
-__-AsString__
-
-Returns string representaion of the semantic tag (i.e v1.1.1)
-
-# Test-Tag 
-
-Checks if the current repository has any tags. returns $true or $false 
-
-```
-# look for semantic tags - if not found create or increment last   
-if (!(Test-Tag -SemanticTags)) {
-    $newTag = New-Tag 
-} else {
-    $newTag = Get-LatestTag -Increment -AsString
-}   
-```
-
-### Parameters 
-
-__-LocalReppository__ (optional)
-
-The __Root__ directory where the local repository resides.
-
-__-Repository__ (optional)
-
-the local repository name
-
-__-SemanticTags__ (optional) (switchparameter)
-
-Only looks for standard semantic tags (vx.x.x)
-
-&nbsp;
-
-# Invoke-Commit
-Creates a local commit. With any changes made to the local repository. you can optionally create a tag to be associated with the commit and also optionally push your changes to the remote.
-
-```
-    Invoke-Commit -Tag $newTag -Message "Test commit one with tag" 
-```
-
-
-### Parameters
-
-__-Tag__ 
-
-A tag name (string) you want associated with the commit.  
-
-__-Message__ 
-
-The commit description. If the tag is used the same description is used for the commit and tag
-
-__-LocalRepository__ (optional)
-
-The __Root__ directory where the cloned repo will be written to. 
-
-__-Repository__ (optional)
-
-the __Remote__ repository name
-
-__-Push__ (optional) (switch)
-
-Pushes the commit the the remote repository 
-
-
-# Invoke-Push
-Pushes any commits from the local repository to the remote repository.
-
-```
-    Invoke-Push # optional -Path xx -Repository yy 
-```
-
-
-### Parameters
-
-__-LocalRepository__ (optional)
-
-The __Root__ directory where the cloned repo will be written to. 
-
-__-Repository__ (optional)
-
-the __Remote__ repository name
-
-&nbsp 
-
-# Invoke-Pull
-
-invokes a pull against the current or specified repository and branch.
-If there are otstanding commits an error will be thrown.
-
-```
-Invoke-Pull -Branch "SomeBranch"
-```
-
-### Parameters 
-
-__Repository__ (optional) 
-
-The local repository name 
-
-__Path__ (optional)
-
-The local root directory of the repository 
-
-__Branch__ (optional)
-
-The branch to pull against (it will be checkout first)
-
-&nbsp;
-
-# New-PullRequest
-Creates a Remote pull request for the current repostiory. You can optinally specify the __-Repostiory__ and __-Branch__. If __-Branch__ is not specified , the default branch (origin) is used as the target of the subsequent merge.  
-
-```
-    # optional -Repository and -Branch
-    New-PullRequest -Title "title" -Description "description"
-```
-
-### Parameters
-
-__-Title__
-
-The title of the pull request 
-
-
-__-Description__ 
-
-The Description of the pull request 
-
-__-Branch__ (optional)
-
-The target branch of the pull (merge) request. If NOT specified the branch defined in the 
-GitConnection object is used  
-
-__-Repository__ (optional)
-
-the __Remote__ repository name
-
-__-Reviewers__ [string[]]
-
-A string array of users that are required to approve the pull requests
-
-__-TeamReviewers__ [string[]]
-
-A string array of teams required to approve the pull request. 
-
-&nbsp;
-
-# Get-PullRequests
-
-Returns a list of all pull requests for the given remote repository or the first 'open' pull request 
-
-```
-   # optional -Repostiory parameter to set remote repository name
    
-   # get the first (and only) open pull request (GitPullResponse)
-   $openPullRequest = Get-PullRequests -Open 
-
-   # or 
-
-   # get all pull requests (PullRequestCollection)
-   $allRequests = Get-PullRequests 
+> Checks out the named (or default branch) if it exists.
+> Any uncommited changes on the current branch will be REMOVED if the -Force parameter is specified
+> otherwise an error will be thrown.
+   
+## ** Example **
+   
 ```
-
-### Parameters
-
-__-Open__ (optional)
-
-Returns a GitPullResponse object of the first open pull request 
-
-__-Repository__ (optional)
-
-The target remote repository 
-
-&nbsp;
-
-# Get-PullRequest 
-
-Returns the (GitPullRequestDetail) detail of a specific pull request. e.g the status of the 
-pullrequest - if it is blocked or stale. you can use this to check the status of the 
-pull request and merge if it is in the correct state
-
-The returned object (GitPullRequestDetail) provides several properties 
-that can be interrogated to get the state of the pull request.
-
-#### GitPullRequestDetail
-
-   | Property | Description | 
-   | --- | --- |
-   | IsBlocked | Identifies if the pull request is awaiting approval
-   | MergeState | One of Clean, Unstable, Dirty, Unknown, Blocked, Behind, Draft, Has_Hooks, Unsupported  
-   | CanMerge | [bool] wether the pullrequest can be merged  
-   | Reviewers | array of reviewers assinged to the pull request    
-
-
-&nbsp;
-
+Get-Branch -Branch 'mybranch' -Force # remove any uncommited chages
 ```
-$pullRequestResponse = New-PullRequest -Title "i created a pull request" -Description "Testing" -Reviewers "Druid-Nutstone-Test-User"
-
-$pullResponseDetail = $pullRequestResponse | Get-PullRequest 
-
-if ($pullResponseDetail.CanMerge) {
-    Merge-PullRequest -Number $pullResponseDetail.Number -Comment "Merged" # -LeaveBranches to NOT delete local and remote branches
-}
-else {
-    if ($pullResponseDetail.IsBlocked) {
-        Write-Host "Waiting for approval from:-"
-        Write-Host ($pullResponseDetail.Reviewers | Format-Table | Out-String)  
-    }
-}
-
+## ** Parameters **
+   
+   
+**-Origin&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;If specified the origin branch (main branch) is used
+   
+**-Force&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Forces any uncommited changes to be removed
+   
+**-Branch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the branch to action
+   
+**-LocalRepository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The root path to the local repository
+   
+**-Repository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the local and remote repository
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+   
+   
+# Get-Branches
+   
+> Returns either a list of local branches or a filtered list based on the supplied ScriptBlock.
+> The script block will be provides a LocalBranchCollection via a parameter
+   
+## ** Example **
+   
 ```
-
-### Parameters 
-
-__PullResponse__ (optional) 
-
-(GetPullResponse) object that contains the pull number
-
-__PullNumber__ ([int])
-
-The unique integer pull request number
-
-
-
-&nbsp;
-
-# Merge-PullRequest
-
-Merges a pull request into the origin branch. It must have been authorised (if neccessary).
-
-```
-# to leave the remote and local branches intact after the merge 
-#  use the -LeaveBranches switch parameter
-
-$latestPullRequest = Get-PullRequests -Open 
-
-$latestPullRequest | Merge-PullRequest -Comment "merged ok" 
-
-# Or 
-
-$mergeResult = Merge-PullRequest -PullRequest $latestPullRequest -Comment "merged ok"
-
-```
-
-### Parameters
-
-__-PullRequest__ 
-
-The GitPullResponse (can be Piped) 
-
-__-Repository__
-
-Source remote repository name
-
-__-LeaveBranches__ (switchparameter)
-
-Leaves remnote and local branches intact (does not delete then) after the merge. 
-The default IS to delete them
-
-&nbsp;
-
-# Merge-Remote 
-
-Meges a remote source branch into a target branch. By default , if the merge is a success, both the remote and local branches will be deleted
-
-```
-$mergeResult = Merge-Remote -Comment "Merged by process" -SourceBranch "myrepo" -DestinationBranch "main"  -DeleteBranches
-
-if ($mergeResult.Merged) {
-   Write-Host "merged"
-} else {
-   Write-Host $mergeResult.Message
+Get-Branches -Script {
+  param($Branches)
+    return $Branches | Where-Object { $_.Name -like 'feature/*' }
 }
 ```
-
-### Parameters 
-
-__-Comment__ (required) 
-
-merge comment added to the merge 
-
-__-SourceBranch__ (optional)
-
-The source branch to merge. If not specified the branch from the Git-Connection is used 
-
-__-DestinationBranch__ (optional)
-
-The target branch to merge too. If not specified , the repository origin (main) is used. 
-
-__-DeleteBranches__ (optional) (switchparameter)
-
-Deletes the local and remote branches if the merge is succesfull (the default is $true (isPresent)
-
-&nbsp;
-
-# New-Release 
-
-Creates a new github release from the a) latest tag b) specified tag c) a new tag
-
-You can add assets directly to the release either individually or pass a directory and that directory will be zipped and added to the release.
-
-There are also options to create a draft, pre-release and avoid making it the default latest release 
-
+## ** Parameters **
+   
+   
+**-Script&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[ScriptBlock]
+   
+&nbsp;&nbsp;&nbsp;The filter script to be called iwth the branch list object
+   
+**-Branch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the branch to action
+   
+**-LocalRepository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The root path to the local repository
+   
+**-Repository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the local and remote repository
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+   
+   
+# Get-CurrentBranch
+   
+> Returns the current branch.
+> The script block will be provides a LocalBranchCollection via a parameter
+   
+## ** Example **
+   
 ```
-New-Release -ReleaseName "First release for powershell" `
-             -Description "Release to see if powershell works" `
-             -AssetDirectory "C:\Deleteme\PS.Selenium" `
-             -AssetZipName "Selenium" `
-             -UseLatestTag  
+$currentBranch = Get-CurrentBranch
 ```
-
-### Parameters 
-
-__-ReleaseName__
-
-Name to give the release
-
-__-Description__
-
-Description of the release
-
-__AssetDirectory__
-
-Path to the directory that contains a list of files/directories to be zipped and added to the release assets
-
-__AssetZipName__
-
-The name of the zip file that will be added to the release assets
-
-__UseLatestTag__ (switch)
-
-Tells the release to get the latest tag in the repository and use that as the release associated tag
-
-__-Tag__
-
-The GitTag instance to use as the tag 
-
-__-NewTag__ (string)
-
-A new Tag to asstiate with the release 
-
-__-Draft__ (switch)
-
-Does not publish the release , but tags it as a draft release
-
-__-PreRelease__ (switch)
-
-Specified that this release includes preRelease code 
-
-__-MakeLatest__ (bool)
-
-if you do not want this release to be the latest release set this to $false
-
-__-Assets__ (string[])
-
-Enumerable list of asset files to add to the release. These files will __NOT__ be zipped , but added to the release assets as individual assets 
-
-&nbsp;
-
-# Get-Release 
-
-Returns (GitReleaseItem) object of a release. it can return the object based on it's a) name b) tag or the latest release (__-Latest__)
-
-if no parameters are set (apart from __-Repository__) then a GitReleaseCollection object is returned
-
+## ** Parameters **
+   
+   
+**-Branch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the branch to action
+   
+**-LocalRepository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The root path to the local repository
+   
+**-Repository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the local and remote repository
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+   
+   
+# New-Branch
+   
+> Creates and checks out a new branch. Or , if the branch exists, Checks it out.
+   
+## ** Example **
+   
 ```
-$latestRelease = Get-Release -latest
+$branchok = New-Branch -Branch 'mynewbranch'
 ```
-
-### Parameters
-
-__-Latest__ (Switch)
-
-Gets the 'latest' release 
-
-__-Tag__ (optional)
-
-Gets the release that has the 'latest' tag.
-
-__-Name__ (optional)
-
-Gets the release named -Name
-
-__-Repository__ (optional)
-
-Source remote repository name
-
+## ** Parameters **
+   
+   
+**-Branch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the branch to action
+   
+**-LocalRepository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The root path to the local repository
+   
+**-Repository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the local and remote repository
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+   
+   
+# Test-Branch
+   
+> Tests wether a local branch existrs or not
+   
+## ** Example **
+   
+```
+if ((Test-Branch -Branch 'mybranch')) {
+    Write-Host 'Branch exists'
+}
+```
+## ** Parameters **
+   
+   
+**-Branch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the branch to action
+   
+**-LocalRepository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The root path to the local repository
+   
+**-Repository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the local and remote repository
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+# Connection Detail
+   
+   
+   
+   
+# Get-GitConnection
+   
+> Returns specific or all of the properties of the git-connection
+   
+## ** Example **
+   
+```
+Get-GitConnection -RepositoryOwner # get the org or user of the connection
+```
+## ** Parameters **
+   
+   
+**-RepositoryOwner&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Returns either the organisation or user of the connection
+   
+**-Token&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Returns the defined PAT token as a string
+   
+**-IsOrg&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;retuns a boolean if the connection is for an origanisation
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+   
+   
+# Get-GitToken
+   
+> Defined ScriptBlock that returns a string that is a valid Git hub Token. 
+> That is then stored in the git connection object
+   
+## ** Example **
+   
+```
+Get-GitToken -Script {
+    return SomeWayToGetATokenThatsReturnsAString
+}
+```
+## ** Parameters **
+   
+   
+**-Script&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[ScriptBlock]
+   
+&nbsp;&nbsp;&nbsp;A user defined ScriptBlock that returns a valid Git PAT token
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+   
+   
+# New-GitConnection
+   
+> Creates a global git connection that can be used both locally and remotely
+> It is available throughout the powershell session for all other cmdlets
+   
+## ** Example **
+   
+```
+New-GitConnection -Organisation 'MyOrg'
+```
+## ** Parameters **
+   
+   
+**-TestConnection&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Tests the connection
+   
+**-TokenScript&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[ScriptBlock]
+   
+&nbsp;&nbsp;&nbsp;A ScriptBlock that returns a valid Git token. This will be used in subsequent GitHub calls
+   
+**-Organisation&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The Organisation name of the remote repository
+   
+**-User&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The User of the name of the remote repository
+   
+**-Repository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The Remote Repository name
+   
+**-Token&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The GitHub PAT token used for authentication
+   
+**-LocalRepository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The Root path of the local repository - the repository name will be appended automatically
+   
+**-Branch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The branch to action against (defaults to origin/main)
+   
+**-DefaultBranch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The remote origin branch. Gets populated automatically by some cmdlets
+   
+**-Email&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The email to use when commiting/pushing
+   
+**-CredentialUser&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;Not used. the PAT token is used. Here for future oauth development
+   
+**-CredentialPassword&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;Not used. the PAT token is used. Here for future development
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+   
+   
+# Set-GitConnection
+   
+> Sets one or more git connection properties
+   
+## ** Example **
+   
+```
+Set-GitConnection -Repository 'somerepo' -Branch 'mybranch
+```
+## ** Parameters **
+   
+   
+**-Organisation&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The Organisation name of the remote repository
+   
+**-User&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The User of the name of the remote repository
+   
+**-Repository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The Remote Repository name
+   
+**-Token&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The GitHub PAT token used for authentication
+   
+**-LocalRepository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The Root path of the local repository - the repository name will be appended automatically
+   
+**-Branch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The branch to action against (defaults to origin/main)
+   
+**-DefaultBranch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The remote origin branch. Gets populated automatically by some cmdlets
+   
+**-Email&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The email to use when commiting/pushing
+   
+**-CredentialUser&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;Not used. the PAT token is used. Here for future oauth development
+   
+**-CredentialPassword&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;Not used. the PAT token is used. Here for future development
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+# Release Detail
+   
+   
+   
+   
+# Get-Release
+   
+> Returns a list of Releases (GitReleaseCollection) or a single release (GitReleaseItem)
+> Use the -Latest, -Name and -Tag parameters to narrow the search
+   
+## ** Example **
+   
+```
+$releases = Get-Release -Repository -Latest
+```
+## ** Parameters **
+   
+   
+**-Latest&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;If defined returns the latest release
+   
+**-Name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;Filter on the name of the release
+   
+**-Tag&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;Filter on a specific tag
+   
+**-Branch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the branch to action
+   
+**-LocalRepository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The root path to the local repository
+   
+**-Repository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the local and remote repository
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+   
+   
 # Get-ReleaseDownloads
-
-Downloads __ALL__ the assets associated with a release to the specified local path. By default any zip files will be extracted.
-
-it returns a GitDownloadReleaseResponse object , that contains an array of FileInfo objects for each file downloaded (and extracted) 
-
+   
+> Downloads the release content of a release and returns a (GitDownloadReleaseResponse)
+> which contains fileinfo information about the files downloaded
+> By default all release artifacts are download , and , if they are zipped , they are unzipped to the target -Path
+   
+## ** Example **
+   
 ```
-$release = Get-Release -Latest -Repository "myRepo"
-
-$downloadedFiles = Get-ReleaseDownloads -Release $release -Path "C:\Temp"  
+$downloads = Get-Release -Latest | Get-ReleaseDownloads -Repository -Latest
 ```
-
-### Parameters 
-
-__-Release__ (GitReleaseItem)
-
-The target release to download (GitReleaseItem)
-
-__-Path__ (string) 
-
-The full directory path of the target. If the path exists it will be deleted and re-created. If it does not exist , it will be created 
-
-__-ReleaseId__ (int)
-
-The id of the release 
-
-__-Latest__ (switch)
-
-Downloads the 'latest' release from the repository 
-
-__ExtractZip__ (bool) 
-
-Set to $false is you don't want any zip files to be extracted
-
-# Get-WorkFlows
-
-Returns a collection (GitWorkFlowCollection) of workflows for the given user/org repository.
-
+## ** Parameters **
+   
+   
+**-Release&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[GitReleaseItem]
+   
+&nbsp;&nbsp;&nbsp;GitReleaseItem from Get-Release
+   
+**-Path&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;Required target path for downloads. The directory structure will be created if it does not exist
+   
+**-Tag&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;Optional Tag to search
+   
+**-ReleaseId&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[Int32]]
+   
+&nbsp;&nbsp;&nbsp;Release id of the releasew to download
+   
+**-Latest&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Get leatest release
+   
+**-ExtractZip&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[Boolean]
+   
+&nbsp;&nbsp;&nbsp;Extract all zip files found in the release
+   
+**-Branch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the branch to action
+   
+**-LocalRepository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The root path to the local repository
+   
+**-Repository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the local and remote repository
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+   
+   
+# New-Release
+   
+> Creates a new remote release
+   
+## ** Example **
+   
 ```
-   $workFlows = Get-WorkFlows 
-
-   $myWorkflow = $workFlows.GetWorkFlowByName("myworkflow")
-
-   ...
+$releaseResponse = New-ReleaseLatest -UseLatestTag -ReleaseName 'myrelease' -Description 'my first release'
 ```
-
-### Parameters 
-
-Non (see New-GitConnection)
-
-&nbsp;
-
-# Set-WorkFlow 
-
-Initialises a workflow request object. (GitWorkFlowRequest). It forst checks to see the workflow exists. 
-If no branch is specified it will get the workflow from the origin branch. 
-
+## ** Parameters **
+   
+   
+**-NewTag&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;String tag that does not conform to semantic tag rules
+   
+**-Tag&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[GitTag]
+   
+&nbsp;&nbsp;&nbsp;Semantic tag
+   
+**-UseLatestTag&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;If specified uses the latest tag from the repository
+   
+**-ReleaseName&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;Mandatory release name
+   
+**-Description&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;Mandatory description
+   
+**-Draft&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Specifies this release is a draft
+   
+**-PreRelease&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Specifies this release is a pre-release
+   
+**-MakeLatest&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;This release is the latest
+   
+**-Assets&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String[]]
+   
+&nbsp;&nbsp;&nbsp;An Array of file names to be added to the release
+   
+**-AssetDirectory&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;A directory (source) that is used to populate the assets. This will be Zipped
+   
+**-AssetZipName&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;Optional the name of the zip to create from the sset directory
+   
+**-Branch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the branch to action
+   
+**-LocalRepository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The root path to the local repository
+   
+**-Repository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the local and remote repository
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+# Repository Detail
+   
+   
+   
+   
+# Add-RepositoryUser
+   
+> Adds to the the repositoryrequest a valid user whom is available to review
+   
+## ** Example **
+   
 ```
-    Set-WorkFlow -Name "myworkflow" -Branch "mybranch"
-
-    # or more likely 
-
-   $workflowResult = Set-WorkFlow -Name "myworkflow" | `
-         Set-WorkFlowInputVariable -Name "VAR1" -Value "VAR1 -  var1 test string" | `
-         Set-WorkFlowInputVariable -Name "Var2" -Value "Var 2 - value for 2" | `
-         Invoke-WorkFlow -Wait
+$repositoryRequest = Add-RepositoryUser -Name 'fred.bloggs' -UserType User
 ```
-
-## Parameters 
-
-__-Name__ (required)
-
-The name of the workflow as definied in github. 
-
-__-Branch__ (optional)
-
-The name of the branch where the workflow is defined 
-
-&nbsp;
-
-# Set-WorkFlowInputVariable
-
-Adds the value of a pre-defined variable in a workflow_dispatch yaml block for the 'current' work flow request. 
-The variable is checked to see if it exists and wether it is required (or not) before it is added to the request 
-
+## ** Parameters **
+   
+   
+**-Repository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[GitRepositoryRequest]
+   
+&nbsp;&nbsp;&nbsp;Mandatory the GitRepositoryRequest object
+   
+**-Name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;Manadatory the name of the user
+   
+**-UserType&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[RepositoryUserType]
+   
+&nbsp;&nbsp;&nbsp;The type of user User or Team
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+   
+   
+# Get-Repositories
+   
+> Gets a list of remote repositories for the current user/Organisation
+   
+## ** Example **
+   
 ```
-    $gitFlow = xxx
-    Set-WorkFlowInputVariable -GitFlow $gitflow -Name "VAR1" -Value "variablevalue" 
-
-    # or more likely
-    Set-WorkFlow -Name "myworkflow" | `
-         Set-WorkFlowInputVariable -Name "VAR1" -Value "varvalue" 
-
+$repositoryList = Get-Repositories -Script {
+     param($repoList)
+     return $repoList | Where $_Name -eq 'myrepo'
+}
 ```
-
-### Parameters 
-
-__-GitFlow__ (GitWorkFlowRequest) (Can be piped from pipeline)
-
-the GitWorkFlowRequest object that contains the current request properties
-
-__-Name__
-
-The name of the variables as defined in the workflow_dispatch input block
-
-__-Value__ [string]
-
-The name of the variables as defined in the workflow_dispatch input block
-
-String value of the variable 
-
-&nbsp;
-
-# Invoke-WorkFlow
-
-Start a workflow that is defined in the input variable -GitFlow (which can come from the pipeline). 
-It will execute the workflow and optionally wait for the response. It returns (GitFlowResponse)
-
+## ** Parameters **
+   
+   
+**-Script&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[ScriptBlock]
+   
+&nbsp;&nbsp;&nbsp;Optional script to filter the returned reposioty list
+   
+**-Branch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the branch to action
+   
+**-LocalRepository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The root path to the local repository
+   
+**-Repository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the local and remote repository
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+   
+   
+# Invoke-NewRepository
+   
+> Creates a new remote repository base on the input from a GitRepositoryRequest object
+   
+## ** Example **
+   
 ```
-   $workflowResponse = Invoke-WorkFlow -GitFlow $workFlowRequest -Wait
-   # do something with response 
-
-   # or more likely
-
-      $workflowResult = Set-WorkFlow -Name "myworkflow" | `
-         Set-WorkFlowInputVariable -Name "VAR1" -Value "VAR1 -  var1 test string" | `
-         Set-WorkFlowInputVariable -Name "Var2" -Value "Var 2 - value for 2" | `
-         Invoke-WorkFlow -Wait
-      if ($workflowResult.IsSuccess) {
-         # do something 
-      }   
+$repositoryResult = New-Repository -Name 'frank' | Invoke-Repository
 ```
-
-### Parameters 
-
-__-GitFlow__ (can be from pipeline)
-
-input (GitFlowRequest) 
-
-__-Wait__ (switch parameter)
-
-Wait for response (GitFlowResponse)
-
-&nbsp;
-
+## ** Parameters **
+   
+   
+**-Repository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[GitRepositoryRequest]
+   
+&nbsp;&nbsp;&nbsp;Mandatory The GitRepositoryRequest object to create the repository from
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+   
+   
+# New-Repository
+   
+> Creates a new GitRepositoryRequest request
+   
+## ** Example **
+   
+```
+$repositoryList = New-Repository -Name 'frank'
+```
+## ** Parameters **
+   
+   
+**-Name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;Mandatory The unique name of the repository
+   
+**-Private&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;The repository is Private
+   
+**-Description&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The descrition of the repository content
+   
+**-MinimumRewiewers&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[Int32]
+   
+&nbsp;&nbsp;&nbsp;The minimum number of reviewers required to fullfill a pull request (default 0 = none)
+   
+**-Branch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the branch to action
+   
+**-LocalRepository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The root path to the local repository
+   
+**-Repository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the local and remote repository
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+   
+   
+# Remove-Repository
+   
+> Removes a remote/local repository from the current user/organisation and or the local repository
+   
+## ** Example **
+   
+```
+$deleteResponse = Remove-Repository -Name 'myrepo'
+```
+## ** Parameters **
+   
+   
+**-Name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;Mandatory the name of the repository to remove
+   
+**-Action&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[RepositoryRemoveAction]
+   
+&nbsp;&nbsp;&nbsp;Which Repository to Remove :- Remote , local or Both
+   
+**-Branch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the branch to action
+   
+**-LocalRepository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The root path to the local repository
+   
+**-Repository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the local and remote repository
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+   
+   
+# Test-Repository
+   
+> Tests for the existence of a remote repository
+   
+## ** Example **
+   
+```
+$repoExists = Test-Repository -Name 'myrepo'
+```
+## ** Parameters **
+   
+   
+**-Name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;
+   
+**-Branch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the branch to action
+   
+**-LocalRepository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The root path to the local repository
+   
+**-Repository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the local and remote repository
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+   
+   
+# Get-PullRequest
+   
+> Returns details about a specific pull request. Use in conjunction with Get-PullRequests
+   
+## ** Example **
+   
+```
+$pullRequests = Get-PullRequests -Repository 'myRepo' -Open
+$pullRequestResponseDetail = $pullRequests | Get-PullRequest
+if ($pullRequestResponseDetail.IsBlocked) {
+   Write-Host 'Cannot merge - waiting for reviewers'
+}
+```
+## ** Parameters **
+   
+   
+**-PullResponse&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[GitPullResponse]
+   
+&nbsp;&nbsp;&nbsp;GitPullResponse object from pipeline
+   
+**-PullNumber&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[Int32]]
+   
+&nbsp;&nbsp;&nbsp;The unique pull number from a pull request
+   
+**-Branch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the branch to action
+   
+**-LocalRepository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The root path to the local repository
+   
+**-Repository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the local and remote repository
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+   
+   
+# Get-PullRequests
+   
+> Returns index details about pull requests (open or otheriwse) for the current repository
+> It will return (GitPullResponse) or (GitPullRequestCollection) for multiple entries
+> if there are none found an empty object is returned (or error is -ErrorAction is 'Stop'
+   
+## ** Example **
+   
+```
+$pullRequests = Get-PullRequests -Repository 'myRepo' -Open
+```
+## ** Parameters **
+   
+   
+**-PullRequest&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[GitPullResponse]
+   
+&nbsp;&nbsp;&nbsp;A specific pull request object
+   
+**-Open&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Filter on Open pull requests
+   
+**-SourceBranch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;Filter on a source branch name
+   
+**-TargetBranch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;Filter on a target branch
+   
+**-Branch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the branch to action
+   
+**-LocalRepository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The root path to the local repository
+   
+**-Repository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the local and remote repository
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+   
+   
+# New-PullRequest
+   
+> Creates a new pull request.
+> It will return (GitPullResponse) or (GitPullRequestCollection) for multiple entries
+> if there are none found an empty object is returned (or error is -ErrorAction is 'Stop'
+   
+## ** Example **
+   
+```
+$pullRequests = Get-PullRequests -Repository 'myRepo' -Open
+```
+## ** Parameters **
+   
+   
+**-Title&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;Mandatory Title of pull request
+   
+**-Description&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;Mandatory Description of pull request
+   
+**-Reviewers&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String[]]
+   
+&nbsp;&nbsp;&nbsp;Optional Array of required reviewers. They must be active in the Organisation/User
+   
+**-TeamReviewers&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String[]]
+   
+&nbsp;&nbsp;&nbsp;Optional Array of required team reviewers. They must be active in the Organisation/User
+   
+**-Branch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the branch to action
+   
+**-LocalRepository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The root path to the local repository
+   
+**-Repository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the local and remote repository
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+   
+   
+# Merge-PullRequest
+   
+> Merges a pullrequest into 
+   
+## ** Example **
+   
+```
+$mergeResponse = Merge-PullRequest -Number 4 -Comment 'Merging branch'
+```
+## ** Parameters **
+   
+   
+**-PullRequest&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[GitPullResponse]
+   
+&nbsp;&nbsp;&nbsp;Optional GitPullResponseObject
+   
+**-Number&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[Int32]]
+   
+&nbsp;&nbsp;&nbsp;Optional pull request number
+   
+**-Comment&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;Mandatory merge commment
+   
+**-LeaveBranches&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Optional switch to leave local and remote branches with the branch intact
+   
+**-Branch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the branch to action
+   
+**-LocalRepository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The root path to the local repository
+   
+**-Repository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the local and remote repository
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+   
+   
+# Merge-Remote
+   
+> Merges remote branches
+   
+## ** Example **
+   
+```
+$mergeResponse = Merge-Remote -SourceBranch 'testbranch' -DestinationBranch 'main' -Comment 'remote merge' -DeleteBranches
+```
+## ** Parameters **
+   
+   
+**-Comment&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;
+   
+**-SourceBranch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;
+   
+**-DestinationBranch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;
+   
+**-DeleteBranches&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;
+   
+**-Branch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the branch to action
+   
+**-LocalRepository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The root path to the local repository
+   
+**-Repository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the local and remote repository
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+   
+   
+# Invoke-Commit
+   
+> Commits any changes in the current repository. with an optional tag and
+> optionall pushes the changes
+   
+## ** Example **
+   
+```
+$pushCommitResult = Invoke-Commit -Message 'my commit' -Tag 'v1.0.0' -Push -ShowProgress
+```
+## ** Parameters **
+   
+   
+**-Tag&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The tag to tag the commit with (can be semantic or free-form)
+   
+**-Message&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The message associated with the commit. this is REQUIRED
+   
+**-Push&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;If specified the commit will be pushed to the remote
+   
+**-ShowProgress&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;If specified shows a manualy progress of the push
+   
+**-Branch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the branch to action
+   
+**-LocalRepository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The root path to the local repository
+   
+**-Repository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the local and remote repository
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+   
+   
+# Invoke-Pull
+   
+> Pulls the latest changes for the specified repo and branch.
+> if the branch specified is not the current branch - it is checkout
+   
+## ** Example **
+   
+```
+$mergeStatus = Invoke-Pull -Branch 'mybranch'
+```
+## ** Parameters **
+   
+   
+**-Branch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the branch to action
+   
+**-LocalRepository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The root path to the local repository
+   
+**-Repository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the local and remote repository
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+   
+   
+# Invoke-Push
+   
+> Pushes any commited changes on the current repository
+   
+## ** Example **
+   
+```
+$pushed = Invoke-Push -ShowProgress
+```
+## ** Parameters **
+   
+   
+**-ShowProgress&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Shows the progress of the push action
+   
+**-Branch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the branch to action
+   
+**-LocalRepository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The root path to the local repository
+   
+**-Repository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the local and remote repository
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+   
+   
+# Test-Changes
+   
+> Tests if there any any uncommited chages to the current local repository
+   
+## ** Example **
+   
+```
+$pushed = Invoke-Push -ShowProgress
+```
+## ** Parameters **
+   
+   
+**-Branch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the branch to action
+   
+**-LocalRepository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The root path to the local repository
+   
+**-Repository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the local and remote repository
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+   
+   
+# Invoke-Clone
+   
+> Clones a remote repository locally.
+> It is an itelligent clone, in that , if the repository already exists locally, it will not clone it again.
+> but , pull the latest version from the remote
+> if the -Force parameter is set, it will remove the local repo (including uncomitted changes) and clone again
+   
+## ** Example **
+   
+```
+$result = Invoke-Clone -LocalRepository 'C:\MyRepos' -Force
+```
+## ** Parameters **
+   
+   
+**-ShowProgress&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Shows progress of the clone process
+   
+**-Force&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Re-clones the repo even if it is already in the -LocalRepository location
+   
+**-Branch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the branch to action
+   
+**-LocalRepository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The root path to the local repository
+   
+**-Repository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the local and remote repository
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+# Tags Detail
+   
+   
+   
+   
+# Get-LatestTag
+   
+> Returns the latest tag (semantic) of the current respository. you can then increment it
+> if there are no tags an error is thrown UNLESS erroraction is set to 'continue'
+> in which case $null is returned
+   
+## ** Example **
+   
+```
+$newTag = Get-LatestTag -Increment -ErrorAction 'Continue'
+```
+## ** Parameters **
+   
+   
+**-Increment&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Is specified and the tag is semantic. it weill return the next incremented tag version
+   
+**-AsString&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Returns the tag as a string. and increments it if -Increment is specified
+   
+**-IncrementType&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SemanticVersionType]
+   
+&nbsp;&nbsp;&nbsp;The part of the Semantic (Major, Minor, Patch) to increment
+   
+**-AsNativeString&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Is specified and the tag is semantic. it will return the next incremented tag version without the 'v' prefix
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+   
+   
+# Get-Tags
+   
+> Returns a GitTagCollection object tags in the current repo
+   
+## ** Example **
+   
+```
+$tagCollection = Get-Tags
+```
+## ** Parameters **
+   
+   
+**-Branch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the branch to action
+   
+**-LocalRepository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The root path to the local repository
+   
+**-Repository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the local and remote repository
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+   
+   
+# Invoke-Tag
+   
+> Creates a tag locally and remotely based on the current commit. It returns a SemanticVersion or null 
+   
+## ** Example **
+   
+```
+$tagCreated = Invoke-Tag -TagString 'my oh my'
+```
+## ** Parameters **
+   
+   
+**-TagString&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;A free form tag to add to the current commit
+   
+**-Tag&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SemanticVersion]
+   
+&nbsp;&nbsp;&nbsp;Uses a passed in SemanticVersion
+   
+**-Increment&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Gets the last tag in the repository , increments it and uses that
+   
+**-Force&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;If the tag specified (-TagString) exists, it is removed and recreated
+   
+**-MakeValidTag&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;if the tag specified (-TagString) is not a valid semantic tag, then it is created as a valid tag
+   
+**-Comment&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;Optional comment or release note to be added to the tag. If not specified just the tag name is used
+   
+**-Branch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the branch to action
+   
+**-LocalRepository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The root path to the local repository
+   
+**-Repository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the local and remote repository
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+   
+   
+# New-SemanticTag
+   
+> Returns a SemanticVersion that that can be used as a tag.
+> It uses the standard GitHub semantic versioning scheme.
+> (v)major.minor.patch
+> if the -Tags option (or value from pipeline) is specified the tag will be incremented before it is returned
+   
+## ** Example **
+   
+```
+$newTag = Get-LatestTag -Increment -ErrorAction 'Continue'
+```
+## ** Parameters **
+   
+   
+**-Tags&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[GitTagCollection]
+   
+&nbsp;&nbsp;&nbsp;Optional GitTagCollection (Get-Tags)
+   
+**-TagIncrement&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SemanticVersionType]
+   
+&nbsp;&nbsp;&nbsp;The semantic type Major, Minor, Path to increment when -Tags are specified
+   
+**-NativeTag&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;A non-version tag (i.e x.x.x without the 'v')
+   
+**-Major&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[Int32]
+   
+&nbsp;&nbsp;&nbsp;
+   
+**-Minor&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[Int32]
+   
+&nbsp;&nbsp;&nbsp;
+   
+**-Patch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[Int32]
+   
+&nbsp;&nbsp;&nbsp;
+   
+**-Branch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the branch to action
+   
+**-LocalRepository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The root path to the local repository
+   
+**-Repository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the local and remote repository
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+   
+   
+# New-Tag
+   
+> Returns a new SemanticVersion that that can be used as a tag.
+   
+## ** Example **
+   
+```
+$newTag = New-Tag -Tag '1.2.3' -Increment
+```
+## ** Parameters **
+   
+   
+**-Major&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[Int32]
+   
+&nbsp;&nbsp;&nbsp;The Major version
+   
+**-Minor&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[Int32]
+   
+&nbsp;&nbsp;&nbsp;The Minor version
+   
+**-Patch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[Int32]
+   
+&nbsp;&nbsp;&nbsp;The Patch Version
+   
+**-Tag&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;An Existing tag (vx.x.x) or (x.x.x)
+   
+**-TagIncrement&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SemanticVersionType]
+   
+&nbsp;&nbsp;&nbsp;The semantic type Major, Minor, Path to increment when -Tags are specified
+   
+**-AsString&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;If specified the tag is returned as a string (vx.x.x)
+   
+**-Increment&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;If specified the tag is Incremented by the value of the -TagIncrement (Major, Minor, Patch (default)). The initil -Tag must be specified
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+   
+   
+# Remove-Tag
+   
+> Removes an existing tag from the local and remote repository
+   
+## ** Example **
+   
+```
+$tagRemovalResult = Remove-Tag -Name 'mytag'
+ # or 
+$tagRemovalResult1 = Remove-Tag -Last # remove last tag
+```
+## ** Parameters **
+   
+   
+**-Last&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Remove the last tag
+   
+**-Name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;Name of the tag
+   
+**-Branch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the branch to action
+   
+**-LocalRepository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The root path to the local repository
+   
+**-Repository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the local and remote repository
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+   
+   
+# Test-Tags
+   
+> Returns a bool if the repository has any tags.
+> use the -SemanticTagsto check for semantic tags only
+   
+## ** Example **
+   
+```
+if (!(Test-Tags -LocalRepository 'blah')) {
+    Write-Host 'No tags found'
+}
+```
+## ** Parameters **
+   
+   
+**-SemanticTags&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Only tests against valid semantic tags
+   
+**-Branch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the branch to action
+   
+**-LocalRepository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The root path to the local repository
+   
+**-Repository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the local and remote repository
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+# Utility Detail
+   
+   
+   
+   
+# Copy-ToRepository
+   
+> Utility to copy files from a local path to the current repository.
+> The -Path parameter allows filespec and or root directory definitions
+> This needs to be updated to allow for the path being a directory and the directory copied as well
+   
+## ** Example **
+   
+```
+$result = Copy-ToRepository -Path 'C:\myfiles\*.ps1'
+```
+## ** Parameters **
+   
+   
+**-Path&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The source filespec of files to copy
+   
+**-Branch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the branch to action
+   
+**-LocalRepository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The root path to the local repository
+   
+**-Repository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the local and remote repository
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+# VisualStudio Detail
+   
+   
+   
+   
+# Get-ProjectControl
+   
+> Returns a VisualStudioControlGroup from the given path (full or partial)
+>  if the -Path parameter does not contains .csproj - the first .cspro file gound is used
+> The returned object exposes the follwing Methods :-
+>      GetProjectType() - returns the string project type
+>      GetProjectOrganisation() - returns the string organisation
+>      GetProjectUser() - returns the string user
+>      GetProjectRepository() - returns the string repository
+>      GetProjectWorkFlow() - returns the workflow to invoke
+>      GetProjectWorkFlowRepository() - returns the workflow repository
+>      GetProjectProjectPath() - returns the relative propject path (directory) of the target project (not including the .csproj)
+>      IsOrg() - returns a boolean if the connection is an organisation
+   
+## ** Example **
+   
+```
+$controlGroup = Get-ProjectControl -Path 'C:\myrepos\ps.git'
+```
+## ** Parameters **
+   
+   
+**-Path&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;A fully or partial qualified path to search fro csproj file
+   
+**-ProjectCollection&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[VisualStudioProjectCollection]
+   
+&nbsp;&nbsp;&nbsp;The VisualStudioProjectCollection object
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+   
+   
+# Get-ProjectProperties
+   
+> Returns the a collection of custom ProjectGroup entries from a visual studio .csproj file
+> So to define nuget properties in the project:-
+>     <PropertyGroup Label="Control">
+>        <ProjectType>Nuget</ProjectType>
+>        <OrganisationOrUser>userororg</OrganisationOrUser>
+>        <Repository>TestRepository</Repository>
+> 
+>     </PropertyGroup>
+>     <PropertyGroup Label="Nuget">
+>        <Version>1.0.0</Version>
+>        <PackageId>TestPackage</PackageId>
+>        .....
+>     </PropertyGroup>
+   
+## ** Example **
+   
+```
+$projectProperties = Get-ProjectProperties -ProjectPath 'C:\repos\someproject.csproj'
+```
+## ** Parameters **
+   
+   
+**-ProjectPath&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The Visual Studio .csproj file that contains the custom ProjectGroup properties
+   
+**-ProjectCollection&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[VisualStudioProjectCollection]
+   
+&nbsp;&nbsp;&nbsp;The VisualStudioProjectCollection object
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+   
+   
+# Get-ProjectPropertyValue
+   
+> Returns A specific property value from a projectgroup group
+   
+## ** Example **
+   
+```
+$projectCollection = Get-ProjectProperties -ProjectPath 'C:\repos\someproject.csproj'
+$version = $projectCollection | Get-ProjectPropertyValue -Group Nuget -Property 'Version'
+```
+## ** Parameters **
+   
+   
+**-Group&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[VisualStudioKnownGroup]
+   
+&nbsp;&nbsp;&nbsp;
+   
+**-Property&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;
+   
+**-ProjectCollection&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[VisualStudioProjectCollection]
+   
+&nbsp;&nbsp;&nbsp;The VisualStudioProjectCollection object
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+   
+   
+# Get-ProjectType
+   
+> Returns the Project type enum of a csproj project from the Control ProjectGroup
+   
+## ** Example **
+   
+```
+$projectThatContainsProjectType = Get-ProjectType -Path 'C:\repos\someproject.csproj' -ProjectType Nuget
+Write-Host $projectThatContainsProjectType
+```
+## ** Parameters **
+   
+   
+**-Path&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The Visual Studio Root directory that contains .csproj files
+   
+**-ProjectType&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[VisualStudioKnownGroup]]
+   
+&nbsp;&nbsp;&nbsp;The type of project type to find (Nuget, PowerShell etc 
+   
+**-ProjectCollection&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[VisualStudioProjectCollection]
+   
+&nbsp;&nbsp;&nbsp;The VisualStudioProjectCollection object
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+   
+   
+# Set-ProjectPropertyValue
+   
+> Sets A specific property value in a projectgroup group
+   
+## ** Example **
+   
+```
+$projectCollection = Get-ProjectProperties -ProjectPath 'C:\repos\someproject.csproj'
+$version = $projectCollection | Get-ProjectPropertyValue -Group Nuget -Property 'Version'
+$projectCollection | Set-ProjectPropertyValue -Group Nuget -Property 'Version' -Value '1.0.0'
+```
+## ** Parameters **
+   
+   
+**-ProjectCollection&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[VisualStudioProjectCollection]
+   
+&nbsp;&nbsp;&nbsp;
+   
+**-Group&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[VisualStudioKnownGroup]
+   
+&nbsp;&nbsp;&nbsp;
+   
+**-Property&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;
+   
+**-Value&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+# WorkFlow Detail
+   
+   
+   
+   
 # Get-WorkFlowLogs
-
-Return either an unzipped directory of the logs from a workflow OR an amalgimated string of all logs
-found in the build output.
-
+   
+> Returns the logs from a workflow run. Etiehr to a file or the console.
+   
+## ** Example **
+   
 ```
-   # return logs a continus string stream 
-   $logData = $workflowResult | Get-WorkFlowLogs -TargetPath "C:\TempLogs" -AsString
-   Write-Host $logData 
+$workFlowResult | Get-WorkFlowLogs -ToFile 'C:\temp\workflowlog.txt
 ```
-
-### Parameters 
-
-__-WorkFlowResponse__ (GitWorkFlowResponse) 
-
-Input from workflowresult 
-
-__-WorkFlowId__ (long) (optional - if -WorkFlowResponse not specified)
-
-Unique workflow id from the workflow response
-
-__-TargetPath__ (string)
-
-Where to put the log files
-
-__-AsString__ (switch)
-
-If specified all the logs from the 'build' directory are extracted and combined into a single string (with environment.NewLine)
+## ** Parameters **
+   
+   
+**-WorkFlowResponse&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[GitWorkFlowResponse]
+   
+&nbsp;&nbsp;&nbsp;The GitWorkFlowResponse from the workflow
+   
+**-WorkFlowId&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[Int64]]
+   
+&nbsp;&nbsp;&nbsp;The unique id of the workflow run
+   
+**-WorkFlowName&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the workflow in the remote repository
+   
+**-TargetPath&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The target (local) directory where the logs will be copied to
+   
+**-AsString&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;If specified , the logs are amalgamated and written to the current console
+   
+**-ToFile&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;If specified the amalgamated logs are written to the specified file
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+   
+   
+# Get-WorkFlows
+   
+> Returns all the defined workflows for the given repository.
+   
+## ** Example **
+   
+```
+Get-WorkFlows -Repository 'myrepo'
+```
+## ** Parameters **
+   
+   
+**-Branch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the branch to action
+   
+**-LocalRepository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The root path to the local repository
+   
+**-Repository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the local and remote repository
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+   
+   
+# Invoke-WorkFlow
+   
+> Runs a given workflow and optionally waits until it is complete
+> You would typically use this cmdlet with Set-Workflow and Set-WorkFlowInputVariable
+> 
+> If the workflow has required variables, and they are not set. An error occurs.
+   
+## ** Example **
+   
+```
+$workflowResult = Set-WorkFlow -Name 'CI' | `
+Set-WorkFlowInputVariable -Name 'VAR1' -Value 'value1' | `
+Invoke-WorkFlow -Wait
+if ($workflowResult.IsSuccess) {
+   Write-Host 'It Worked'
+} else {
+   Write-Host 'It Failed'
+}
+```
+## ** Parameters **
+   
+   
+**-GitFlow&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[GitWorkFlowRequest]
+   
+&nbsp;&nbsp;&nbsp;The input GitWorkFlowRequest - this is Mandatory
+   
+**-Wait&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;If specified waits until the workflow is complete. user -Verbose for progress
+   
+**-Branch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the branch to action
+   
+**-LocalRepository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The root path to the local repository
+   
+**-Repository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the local and remote repository
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+   
+   
+# Set-WorkFlowInputVariable
+   
+> Sets the given variable value (or an Environment Value) to the current workflow request and returns the updated (GitWorkFlowRequest) object
+   
+## ** Example **
+   
+```
+$workflowResult = Set-WorkFlow -Name 'CI' | `
+Set-WorkFlowInputVariable -Name 'VAR1' -Value 'value1' | `
+Set-WorkFlowInputVariable -Name 'var2' -Value 'value2'
+```
+## ** Parameters **
+   
+   
+**-GitFlow&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[GitWorkFlowRequest]
+   
+&nbsp;&nbsp;&nbsp;The current (GitWorkFlowRequest) this is Mandatory
+   
+**-Name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the variable to set
+   
+**-Value&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The [string] value of the variable
+   
+**-EnvironmentVariable&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The environment variable (user or process) to get the value from
+   
+**-Optional&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;If specified no check is made for a valid value
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
+   
+   
+# Set-WorkFlow
+   
+> Initialises a GitWorkFlowRequest object with the variables required from the workflow definition
+   
+## ** Example **
+   
+```
+$workflowRequest = Set-WorkFlow -Name 'CI'
+```
+## ** Parameters **
+   
+   
+**-Name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The mandatory Name of the workflow within the current repository
+   
+**-Branch&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the branch to action
+   
+**-LocalRepository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The root path to the local repository
+   
+**-Repository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[String]
+   
+&nbsp;&nbsp;&nbsp;The name of the local and remote repository
+   
+**-Help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**
+[SwitchParameter]
+   
+&nbsp;&nbsp;&nbsp;Display help for this cmdlet
+   
+---
